@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hf-proxy-app.fullname" . }}
+  labels:
+    {{- include "hf-proxy-app.labels" . | nindent 4 }}
+    "output-server": "true"
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "hf-proxy-app.selectorLabels" . | nindent 4 }}

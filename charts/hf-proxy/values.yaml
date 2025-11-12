@@ -1,0 +1,67 @@
+replicaCount: 1
+
+image:
+  repository: hf-proxy
+  pullPolicy: Always
+  tag: "latest"
+
+container:
+  env:
+    - name: HF_API_BASE_URL
+      value: "https://huggingface.co/api"
+    - name: HF_TIMEOUT
+      value: "30"
+    - name: LOG_LEVEL
+      value: "INFO"
+    - name: LOG_JSON
+      value: "true"
+    - name: PORT
+      value: "8080"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+
+resources: {}
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+volumes: []
+volumeMounts: []
+nodeSelector: {}
+tolerations: []
+affinity: {}
