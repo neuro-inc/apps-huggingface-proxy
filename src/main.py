@@ -16,7 +16,6 @@ from apolo_app_types import (
 )
 from fastapi import FastAPI, Query
 
-from src.cache import is_model_cached
 from src.config import Config
 from src.dependencies import DepHFService
 from src.logging import setup_logging
@@ -89,8 +88,17 @@ async def list_outputs(
         logger.info("Fetching outputs list")
 
         async with hf_service:
-            hf_response = await hf_service.search_models(limit=filter_params.limit)
+            # Search HF Hub and local cache in parallel
+            hf_search_task = asyncio.create_task(
+                hf_service.search_models(limit=filter_params.limit)
+            )
+            local_search_task = asyncio.create_task(
+                hf_service.search_cache(model_name_prefix=filter_params.filter)
+            )
 
+            hf_response, cached_models = await asyncio.gather(hf_search_task, local_search_task)
+
+        # Only include models that exist in HF Hub (not just local finetuned models)
         models = []
         for model in hf_response:
             if isinstance(model, dict):
@@ -100,7 +108,7 @@ async def list_outputs(
                     visibility="private" if model.get("private") else "public",
                     gated=model.get("gated", False),
                     tags=model.get("tags", []),
-                    cached=is_model_cached(repo_id, app.config.hf_cache_dir),
+                    cached=repo_id in cached_models,
                     last_modified=model.get("lastModified"),
                 )
                 models.append(hf_model)
@@ -137,14 +145,15 @@ async def get_output_detail(
 
         async with hf_service:
             hf_response = await hf_service.get_repo_details(repo_id)
+            model_repo_id = hf_response.get("id", hf_response.get("modelId", repo_id))
+            cached = await hf_service.is_model_cached(model_repo_id)
 
-        model_repo_id = hf_response.get("id", hf_response.get("modelId", repo_id))
         model = HFModel(
             repo_id=model_repo_id,
             visibility="private" if hf_response.get("private") else "public",
             gated=hf_response.get("gated", False),
             tags=hf_response.get("tags", []),
-            cached=is_model_cached(model_repo_id, app.config.hf_cache_dir),
+            cached=cached,
             last_modified=hf_response.get("lastModified"),
         )
 

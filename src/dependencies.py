@@ -25,6 +25,7 @@ def get_hf_service(request: Request) -> HuggingFaceService:
             token=config.hf_token,
             base_url=config.hf_api_base_url,
             timeout=config.hf_timeout,
+            cache_dir=config.hf_cache_dir,
         )
     return _hf_service
 

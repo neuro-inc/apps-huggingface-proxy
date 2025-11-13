@@ -1,11 +1,12 @@
 """Cache management utilities for HuggingFace models."""
 
-import os
-from pathlib import Path
+import asyncio
+
+from huggingface_hub import scan_cache_dir
 
 
-def is_model_cached(repo_id: str, cache_dir: str) -> bool:
-    """Check if a HuggingFace model is cached locally.
+async def is_model_cached(repo_id: str, cache_dir: str) -> bool:
+    """Check if a HuggingFace model is cached locally using HF Hub utilities.
 
     Args:
         repo_id: Repository identifier (e.g., "meta-llama/Llama-3.1-8B-Instruct")
@@ -14,19 +15,19 @@ def is_model_cached(repo_id: str, cache_dir: str) -> bool:
     Returns:
         True if the model is found in the cache, False otherwise
     """
-    if not cache_dir or not os.path.exists(cache_dir):
+    if not cache_dir:
         return False
 
-    cache_path = Path(cache_dir)
-    models_dir = cache_path / "hub"
+    try:
+        # Run cache scan in thread pool (it's a blocking operation)
+        cache_info = await asyncio.to_thread(scan_cache_dir, cache_dir)
 
-    if not models_dir.exists():
+        # Check if repo_id exists in cached repos
+        for repo in cache_info.repos:
+            if repo.repo_id == repo_id:
+                return True
+
         return False
-
-    # HuggingFace stores models with "models--" prefix and "--" instead of "/"
-    normalized_repo_id = repo_id.replace("/", "--")
-    model_cache_name = f"models--{normalized_repo_id}"
-
-    # Check if the model directory exists in the cache
-    model_path = models_dir / model_cache_name
-    return model_path.exists() and model_path.is_dir()
+    except Exception:
+        # Cache directory doesn't exist or can't be scanned
+        return False
