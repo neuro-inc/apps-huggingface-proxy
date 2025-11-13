@@ -4,8 +4,9 @@ import asyncio
 import logging
 import os
 import signal
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Annotated, Any, AsyncIterator
+from typing import Annotated, Any
 
 from fastapi import FastAPI, Query
 

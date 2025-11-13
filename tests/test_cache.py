@@ -1,10 +1,6 @@
 """Tests for cache utilities."""
 
-import os
-import tempfile
-from pathlib import Path
 
-import pytest
 
 from src.cache import is_model_cached
 

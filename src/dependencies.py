@@ -6,7 +6,6 @@ from fastapi import Depends, Request
 
 from src.services import HuggingFaceService
 
-
 _hf_service: HuggingFaceService | None = None
 
 

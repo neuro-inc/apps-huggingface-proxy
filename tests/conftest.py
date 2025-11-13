@@ -1,7 +1,6 @@
 """Pytest configuration and fixtures."""
 
-from typing import AsyncIterator
-from unittest.mock import Mock
+from collections.abc import AsyncIterator
 
 import pytest
 from fastapi.testclient import TestClient

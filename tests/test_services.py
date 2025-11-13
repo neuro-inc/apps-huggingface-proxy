@@ -86,7 +86,7 @@ async def test_search_models_with_limit():
         mock_client_class.return_value = mock_client
 
         async with service:
-            result = await service.search_models(limit=5)
+            await service.search_models(limit=5)
 
         call_args = mock_client.get.call_args
         assert call_args[1].get("params", {}).get("limit") == 5
