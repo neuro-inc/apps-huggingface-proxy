@@ -8,20 +8,19 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
 
+from apolo_app_types import (
+    DynamicAppBasicResponse,
+    DynamicAppFilterParams,
+    DynamicAppIdResponse,
+    DynamicAppListResponse,
+)
 from fastapi import FastAPI, Query
 
 from src.cache import is_model_cached
 from src.config import Config
 from src.dependencies import DepHFService
 from src.logging import setup_logging
-from src.models import (
-    BasicResponse,
-    FilterParams,
-    HFModel,
-    IdResponse,
-    ListResponse,
-    ModelResponse,
-)
+from src.models import HFModel, ModelResponse
 
 
 class App(FastAPI):
@@ -76,15 +75,15 @@ logger = logging.getLogger(__name__)
 @app.get("/")
 @app.get("/health")
 @app.get("/healthz")
-async def root() -> BasicResponse:
-    return BasicResponse(status="healthy")
+async def root() -> DynamicAppBasicResponse:
+    return DynamicAppBasicResponse(status="healthy")
 
 
 @app.get("/outputs")
 async def list_outputs(
-    filter_params: Annotated[FilterParams, Query()],
+    filter_params: Annotated[DynamicAppFilterParams, Query()],
     hf_service: DepHFService,
-) -> ListResponse:
+) -> DynamicAppListResponse:
     """List available models from HuggingFace."""
     try:
         logger.info("Fetching outputs list")
@@ -117,14 +116,14 @@ async def list_outputs(
         if filter_params.limit:
             models = models[filter_params.offset : filter_params.offset + filter_params.limit]
 
-        return ListResponse(
+        return DynamicAppListResponse(
             status="success",
-            data=[IdResponse(id=model.repo_id, value=model) for model in models],
+            data=[DynamicAppIdResponse(id=model.repo_id, value=model) for model in models],
         )
 
     except Exception as e:
         logger.error("Failed to fetch outputs", extra={"error": str(e)})
-        return ListResponse(status="error", data=None)
+        return DynamicAppListResponse(status="error", data=None)
 
 
 @app.get("/outputs/{repo_id:path}")
