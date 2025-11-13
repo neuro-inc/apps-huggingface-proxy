@@ -34,7 +34,6 @@ def patch_hf_service(mock_service):
     return mock_service
 
 
-@pytest.mark.asyncio
 async def test_list_outputs(client: TestClient, mock_hf_search_response):
     """Test listing all outputs."""
     mock_service = create_mock_service(search_response=mock_hf_search_response)
@@ -58,7 +57,6 @@ async def test_list_outputs(client: TestClient, mock_hf_search_response):
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_list_outputs_with_filter(client: TestClient, mock_hf_search_response):
     """Test listing outputs with filter."""
     mock_service = create_mock_service(search_response=mock_hf_search_response)
@@ -74,7 +72,6 @@ async def test_list_outputs_with_filter(client: TestClient, mock_hf_search_respo
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_list_outputs_error_handling(client: TestClient):
     """Test list outputs error handling."""
     mock_service = create_mock_service(should_fail=True)
@@ -91,7 +88,6 @@ async def test_list_outputs_error_handling(client: TestClient):
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_get_output_detail(client: TestClient, mock_hf_repo_response):
     """Test getting output details for a specific repo."""
     mock_service = create_mock_service(repo_response=mock_hf_repo_response)
@@ -113,7 +109,6 @@ async def test_get_output_detail(client: TestClient, mock_hf_repo_response):
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_get_output_detail_cached_always_false(client: TestClient, mock_hf_repo_response):
     """Test that cached field reflects actual cache status."""
     mock_service = create_mock_service(repo_response=mock_hf_repo_response)
@@ -130,7 +125,6 @@ async def test_get_output_detail_cached_always_false(client: TestClient, mock_hf
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_get_output_detail_with_slash(client: TestClient, mock_hf_repo_response):
     """Test repo ID with slash is handled correctly."""
     mock_service = create_mock_service(repo_response=mock_hf_repo_response)
@@ -145,7 +139,6 @@ async def test_get_output_detail_with_slash(client: TestClient, mock_hf_repo_res
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_get_output_detail_error(client: TestClient):
     """Test output details error handling."""
     mock_service = create_mock_service(should_fail=True)
@@ -162,7 +155,6 @@ async def test_get_output_detail_error(client: TestClient):
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_cached_model_detection(client: TestClient, mock_hf_repo_response):
     """Test that cached models are correctly identified."""
     mock_service = create_mock_service(repo_response=mock_hf_repo_response)
@@ -179,7 +171,6 @@ async def test_cached_model_detection(client: TestClient, mock_hf_repo_response)
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_list_outputs_with_pagination(client: TestClient, mock_hf_search_response):
     """Test listing outputs with pagination parameters."""
     mock_service = create_mock_service(search_response=mock_hf_search_response)
@@ -196,7 +187,6 @@ async def test_list_outputs_with_pagination(client: TestClient, mock_hf_search_r
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_list_outputs_empty_response(client: TestClient):
     """Test listing outputs with empty API response."""
     mock_service = create_mock_service(search_response=[])
@@ -213,7 +203,6 @@ async def test_list_outputs_empty_response(client: TestClient):
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_list_outputs_malformed_model_data(client: TestClient):
     """Test listing outputs with malformed model data."""
     malformed_response = [
@@ -236,7 +225,6 @@ async def test_list_outputs_malformed_model_data(client: TestClient):
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_list_outputs_with_missing_fields(client: TestClient):
     """Test listing outputs with models missing optional fields."""
     response_with_missing_fields = [
@@ -260,7 +248,6 @@ async def test_list_outputs_with_missing_fields(client: TestClient):
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_get_output_detail_missing_optional_fields(client: TestClient):
     """Test getting output details with missing optional fields."""
     minimal_response = {"id": "minimal-model"}
@@ -281,7 +268,6 @@ async def test_get_output_detail_missing_optional_fields(client: TestClient):
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_list_outputs_filter_case_insensitive(client: TestClient, mock_hf_search_response):
     """Test that filter is case insensitive."""
     mock_service = create_mock_service(search_response=mock_hf_search_response)
@@ -298,7 +284,6 @@ async def test_list_outputs_filter_case_insensitive(client: TestClient, mock_hf_
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_list_outputs_filter_by_tag(client: TestClient, mock_hf_search_response):
     """Test filtering outputs by tag."""
     mock_service = create_mock_service(search_response=mock_hf_search_response)
@@ -315,7 +300,6 @@ async def test_list_outputs_filter_by_tag(client: TestClient, mock_hf_search_res
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_list_outputs_filter_no_matches(client: TestClient, mock_hf_search_response):
     """Test filtering outputs with no matches."""
     mock_service = create_mock_service(search_response=mock_hf_search_response)
@@ -332,7 +316,6 @@ async def test_list_outputs_filter_no_matches(client: TestClient, mock_hf_search
     src.dependencies._hf_service = None
 
 
-@pytest.mark.asyncio
 async def test_cached_models_in_list(client: TestClient, mock_hf_search_response):
     """Test that cached status is correctly set for models in list."""
     mock_service = create_mock_service(search_response=mock_hf_search_response)

@@ -15,7 +15,6 @@ def mock_httpx_client():
     return client
 
 
-@pytest.mark.asyncio
 async def test_service_initialization():
     """Test service initialization with token."""
     service = HuggingFaceService(token="test-token", base_url="https://api.test", timeout=60)
@@ -26,7 +25,6 @@ async def test_service_initialization():
     assert service._client is None
 
 
-@pytest.mark.asyncio
 async def test_service_initialization_without_token():
     """Test service initialization without token."""
     service = HuggingFaceService()
@@ -36,7 +34,6 @@ async def test_service_initialization_without_token():
     assert service.timeout == 30
 
 
-@pytest.mark.asyncio
 async def test_service_context_manager():
     """Test service as async context manager."""
     service = HuggingFaceService(token="test-token")
@@ -53,7 +50,6 @@ async def test_service_context_manager():
         mock_client.aclose.assert_called_once()
 
 
-@pytest.mark.asyncio
 async def test_search_models_success():
     """Test searching models successfully."""
     service = HuggingFaceService(token="test-token")
@@ -77,7 +73,6 @@ async def test_search_models_success():
         mock_client.get.assert_called_once()
 
 
-@pytest.mark.asyncio
 async def test_search_models_with_limit():
     """Test searching models with limit parameter."""
     service = HuggingFaceService(token="test-token")
@@ -97,7 +92,6 @@ async def test_search_models_with_limit():
         assert call_args[1].get("params", {}).get("limit") == 5
 
 
-@pytest.mark.asyncio
 async def test_get_repo_details_success():
     """Test getting repository details successfully."""
     service = HuggingFaceService(token="test-token")
@@ -122,7 +116,6 @@ async def test_get_repo_details_success():
         assert result["gated"] is True
 
 
-@pytest.mark.asyncio
 async def test_service_close_without_client():
     """Test closing service when client was never initialized."""
     service = HuggingFaceService()
@@ -131,7 +124,6 @@ async def test_service_close_without_client():
     assert service._client is None
 
 
-@pytest.mark.asyncio
 async def test_service_with_authentication_headers():
     """Test that authentication headers are properly set."""
     service = HuggingFaceService(token="test-token-123")
@@ -149,7 +141,6 @@ async def test_service_with_authentication_headers():
             assert call_kwargs["headers"].get("Authorization") == "Bearer test-token-123"
 
 
-@pytest.mark.asyncio
 async def test_search_models_error_handling():
     """Test search models error handling."""
     service = HuggingFaceService(token="test-token")
@@ -164,7 +155,6 @@ async def test_search_models_error_handling():
                 await service.search_models()
 
 
-@pytest.mark.asyncio
 async def test_get_repo_details_error_handling():
     """Test get repo details error handling."""
     service = HuggingFaceService(token="test-token")
