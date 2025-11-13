@@ -86,7 +86,7 @@ async def test_search_models_with_limit():
 
 
 async def test_get_repo_details_success():
-    """Test getting repository details successfully."""
+    """Test getting repository details successfully when not cached."""
     service = HuggingFaceService(token="test-token")
 
     mock_model_info = MagicMock()
@@ -96,12 +96,35 @@ async def test_get_repo_details_success():
     mock_model_info.tags = ["text-generation"]
     mock_model_info.lastModified = datetime(2024, 1, 15)
 
-    with patch.object(service.api, "model_info", return_value=mock_model_info):
-        result = await service.get_repo_details("meta-llama/Llama-3.1-8B")
+    # Mock is_model_cached to return False so it fetches from API
+    with patch.object(service, "is_model_cached", return_value=False):
+        with patch.object(service.api, "model_info", return_value=mock_model_info):
+            result = await service.get_repo_details("meta-llama/Llama-3.1-8B")
 
     assert result["id"] == "meta-llama/Llama-3.1-8B"
     assert result["gated"] is True
     assert result["tags"] == ["text-generation"]
+
+
+async def test_get_repo_details_cached():
+    """Test getting repository details when model is cached locally."""
+    service = HuggingFaceService(token="test-token")
+
+    # Mock is_model_cached to return True so it returns cached info without API call
+    with patch.object(service, "is_model_cached", return_value=True):
+        with patch.object(service.api, "model_info") as mock_model_info:
+            result = await service.get_repo_details("meta-llama/Llama-3.1-8B")
+
+            # Verify model_info was NOT called since model is cached
+            mock_model_info.assert_not_called()
+
+    # Verify it returns basic cached info
+    assert result["id"] == "meta-llama/Llama-3.1-8B"
+    assert result["modelId"] == "meta-llama/Llama-3.1-8B"
+    assert result["private"] is False
+    assert result["gated"] is False
+    assert result["tags"] == []
+    assert result["lastModified"] is None
 
 
 async def test_service_close():
@@ -128,9 +151,11 @@ async def test_search_models_error_handling():
 
 
 async def test_get_repo_details_error_handling():
-    """Test get repo details error handling."""
+    """Test get repo details error handling when not cached."""
     service = HuggingFaceService(token="test-token")
 
-    with patch.object(service.api, "model_info", side_effect=Exception("Not found")):
-        with pytest.raises(Exception):
-            await service.get_repo_details("nonexistent/model")
+    # Mock is_model_cached to return False so it tries to fetch from API
+    with patch.object(service, "is_model_cached", return_value=False):
+        with patch.object(service.api, "model_info", side_effect=Exception("Not found")):
+            with pytest.raises(Exception):
+                await service.get_repo_details("nonexistent/model")

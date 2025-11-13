@@ -68,7 +68,8 @@ class HuggingFaceService:
     async def get_repo_details(self, repo_id: str) -> dict[str, Any]:
         """Get details for a specific model repository.
 
-        Checks local cache first. If not cached, fetches from HuggingFace Hub.
+        Checks local cache first. If cached, returns basic info without API call.
+        If not cached, fetches full details from HuggingFace Hub.
 
         Args:
             repo_id: Repository identifier (e.g., "meta-llama/Llama-3.1-8B-Instruct")
@@ -82,14 +83,25 @@ class HuggingFaceService:
             # Check if model exists in local cache first
             cached = await self.is_model_cached(repo_id)
             if cached:
-                logger.debug(
-                    "Model found in cache, returning cached info", extra={"repo_id": repo_id}
+                logger.info(
+                    "Model found in cache, returning without API call",
+                    extra={"repo_id": repo_id},
                 )
-                # Model is cached, we can fetch details from HF Hub (it will use local cache)
-                # or return basic info. Let's fetch full details as they're needed.
+                # Return basic info from cache without making API call
+                return {
+                    "id": repo_id,
+                    "modelId": repo_id,
+                    "private": False,  # Default, can't determine from cache alone
+                    "gated": False,  # Default, can't determine from cache alone
+                    "tags": [],  # Not available in cache
+                    "lastModified": None,  # Cache has local mtime, not HF Hub timestamp
+                }
 
-            # Run the blocking API call in a thread pool
-            # If cached, HF Hub SDK will use local files when possible
+            # Model not cached, fetch from HuggingFace Hub
+            logger.info(
+                "Model not cached, fetching from HuggingFace Hub",
+                extra={"repo_id": repo_id},
+            )
             model_info = await asyncio.to_thread(self.api.model_info, repo_id)
 
             # Convert ModelInfo to dictionary
