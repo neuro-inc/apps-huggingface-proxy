@@ -17,6 +17,13 @@ container:
       value: "true"
     - name: PORT
       value: "8080"
+    - name: HF_CACHE_DIR
+      value: "/root/.cache/huggingface"
+    - name: HF_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: hf-proxy-secret
+          key: hf-token
 
 imagePullSecrets: []
 nameOverride: ""
@@ -59,6 +66,11 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
+
+cache:
+  enabled: false
+  size: 10Gi
+  storageClass: ""
 
 volumes: []
 volumeMounts: []

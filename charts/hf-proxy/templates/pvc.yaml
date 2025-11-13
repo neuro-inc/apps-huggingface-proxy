@@ -1,0 +1,17 @@
+{{- if .Values.cache.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "hf-proxy-app.fullname" . }}-cache
+  labels:
+    {{- include "hf-proxy-app.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.cache.storageClass }}
+  storageClassName: {{ .Values.cache.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.cache.size }}
+{{- end }}

@@ -9,6 +9,7 @@ from typing import Annotated, Any, AsyncIterator
 
 from fastapi import FastAPI, Query
 
+from src.cache import is_model_cached
 from src.config import Config
 from src.dependencies import DepHFService
 from src.logging import setup_logging
@@ -59,6 +60,8 @@ app = App(
 app.config = Config(
     hf_api_base_url=os.getenv("HF_API_BASE_URL", "https://huggingface.co/api"),
     hf_timeout=int(os.getenv("HF_TIMEOUT", "30")),
+    hf_token=os.getenv("HF_TOKEN"),
+    hf_cache_dir=os.getenv("HF_CACHE_DIR", "/root/.cache/huggingface"),
     log_level=os.getenv("LOG_LEVEL", "INFO"),
     log_json=os.getenv("LOG_JSON", "true").lower() == "true",
     port=int(os.getenv("PORT", "8080")),
@@ -91,12 +94,13 @@ async def list_outputs(
         models = []
         for model in hf_response:
             if isinstance(model, dict):
+                repo_id = model.get("id", model.get("modelId", ""))
                 hf_model = HFModel(
-                    repo_id=model.get("id", model.get("modelId", "")),
+                    repo_id=repo_id,
                     visibility="private" if model.get("private") else "public",
                     gated=model.get("gated", False),
                     tags=model.get("tags", []),
-                    cached=False,
+                    cached=is_model_cached(repo_id, app.config.hf_cache_dir),
                     last_modified=model.get("lastModified"),
                 )
                 models.append(hf_model)
@@ -134,12 +138,13 @@ async def get_output_detail(
         async with hf_service:
             hf_response = await hf_service.get_repo_details(repo_id)
 
+        model_repo_id = hf_response.get("id", hf_response.get("modelId", repo_id))
         model = HFModel(
-            repo_id=hf_response.get("id", hf_response.get("modelId", repo_id)),
+            repo_id=model_repo_id,
             visibility="private" if hf_response.get("private") else "public",
             gated=hf_response.get("gated", False),
             tags=hf_response.get("tags", []),
-            cached=False,
+            cached=is_model_cached(model_repo_id, app.config.hf_cache_dir),
             last_modified=hf_response.get("lastModified"),
         )
 
