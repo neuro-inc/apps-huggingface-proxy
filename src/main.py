@@ -14,7 +14,7 @@ from apolo_app_types import (
     DynamicAppIdResponse,
     DynamicAppListResponse,
 )
-from fastapi import FastAPI, Query
+from fastapi import Depends, FastAPI
 
 from src.config import Config
 from src.dependencies import DepHFService
@@ -80,25 +80,51 @@ async def root() -> DynamicAppBasicResponse:
 
 @app.get("/outputs")
 async def list_outputs(
-    filter_params: Annotated[DynamicAppFilterParams, Query()],
+    filter_params: Annotated[DynamicAppFilterParams, Depends()],
     hf_service: DepHFService,
 ) -> DynamicAppListResponse:
     """List available models from HuggingFace."""
     try:
-        logger.info("Fetching outputs list")
+        # Parse cached_only from filter string
+        cached_only = False
+        query = filter_params.filter
+        if query:
+            query_lower = query.lower()
+            if "cached_only" in query_lower:
+                cached_only = True
+                # Remove cached_only from query for model filtering
+                query = query.replace("cached_only", "").replace("CACHED_ONLY", "")
+                query = query.strip()
+                if not query:
+                    query = None
+
+        logger.info("Fetching outputs list", extra={"cached_only": cached_only})
 
         async with hf_service:
-            # Search HF Hub and local cache in parallel
-            hf_search_task = asyncio.create_task(
-                hf_service.search_models(limit=filter_params.limit)
-            )
-            local_search_task = asyncio.create_task(
-                hf_service.search_cache(model_name_prefix=filter_params.filter)
-            )
+            if cached_only:
+                # Only return cached models without HF Hub API call
+                logger.info("Fetching cached models only, skipping HF Hub API")
+                hf_response = await hf_service.get_cached_models(model_name_prefix=query)
+            else:
+                # Search HF Hub and local cache in parallel
+                hf_search_task = asyncio.create_task(
+                    hf_service.search_models(limit=filter_params.limit)
+                )
+                local_search_task = asyncio.create_task(
+                    hf_service.search_cache(model_name_prefix=query)
+                )
 
-            hf_response, cached_models = await asyncio.gather(hf_search_task, local_search_task)
+                hf_response, cached_models = await asyncio.gather(
+                    hf_search_task, local_search_task
+                )
 
-        # Only include models that exist in HF Hub (not just local finetuned models)
+                # Mark which models are cached
+                for model in hf_response:
+                    if isinstance(model, dict):
+                        repo_id = model.get("id", model.get("modelId", ""))
+                        model["cached"] = repo_id in cached_models
+
+        # Convert to HFModel objects
         models = []
         for model in hf_response:
             if isinstance(model, dict):
@@ -108,18 +134,10 @@ async def list_outputs(
                     visibility="private" if model.get("private") else "public",
                     gated=model.get("gated", False),
                     tags=model.get("tags", []),
-                    cached=repo_id in cached_models,
+                    cached=model.get("cached", False),
                     last_modified=model.get("lastModified"),
                 )
                 models.append(hf_model)
-
-        if filter_params.filter:
-            models = [
-                m
-                for m in models
-                if filter_params.filter.lower() in m.repo_id.lower()
-                or any(filter_params.filter.lower() in tag.lower() for tag in m.tags)
-            ]
 
         if filter_params.limit:
             models = models[filter_params.offset : filter_params.offset + filter_params.limit]
@@ -146,14 +164,13 @@ async def get_output_detail(
         async with hf_service:
             hf_response = await hf_service.get_repo_details(repo_id)
             model_repo_id = hf_response.get("id", hf_response.get("modelId", repo_id))
-            cached = await hf_service.is_model_cached(model_repo_id)
 
         model = HFModel(
             repo_id=model_repo_id,
             visibility="private" if hf_response.get("private") else "public",
             gated=hf_response.get("gated", False),
             tags=hf_response.get("tags", []),
-            cached=cached,
+            cached=hf_response.get("cached", False),
             last_modified=hf_response.get("lastModified"),
         )
 

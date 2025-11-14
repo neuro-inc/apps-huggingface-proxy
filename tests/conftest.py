@@ -55,6 +55,7 @@ def mock_hf_repo_response():
         "gated": True,
         "tags": ["text-generation", "llama", "pytorch"],
         "lastModified": "2024-07-23T14:48:00.000Z",
+        "cached": False,
         "siblings": [
             {
                 "rfilename": "config.json",

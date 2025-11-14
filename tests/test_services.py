@@ -104,6 +104,7 @@ async def test_get_repo_details_success():
     assert result["id"] == "meta-llama/Llama-3.1-8B"
     assert result["gated"] is True
     assert result["tags"] == ["text-generation"]
+    assert result["cached"] is False
 
 
 async def test_get_repo_details_cached():
@@ -125,6 +126,7 @@ async def test_get_repo_details_cached():
     assert result["gated"] is False
     assert result["tags"] == []
     assert result["lastModified"] is None
+    assert result["cached"] is True
 
 
 async def test_service_close():
@@ -159,3 +161,45 @@ async def test_get_repo_details_error_handling():
         with patch.object(service.api, "model_info", side_effect=Exception("Not found")):
             with pytest.raises(Exception):
                 await service.get_repo_details("nonexistent/model")
+
+
+async def test_get_cached_models():
+    """Test getting list of cached models."""
+    service = HuggingFaceService(token="test-token")
+
+    # Mock scan_cache_dir to return cached models
+    mock_cache_info = MagicMock()
+    mock_repo1 = MagicMock()
+    mock_repo1.repo_id = "model1/test"
+    mock_repo2 = MagicMock()
+    mock_repo2.repo_id = "model2/test"
+    mock_cache_info.repos = [mock_repo1, mock_repo2]
+
+    with patch("src.services.scan_cache_dir", return_value=mock_cache_info):
+        result = await service.get_cached_models()
+
+    assert len(result) == 2
+    assert result[0]["id"] == "model1/test"
+    assert result[0]["cached"] is True
+    assert result[1]["id"] == "model2/test"
+    assert result[1]["cached"] is True
+
+
+async def test_get_cached_models_with_prefix():
+    """Test getting cached models with prefix filter."""
+    service = HuggingFaceService(token="test-token")
+
+    # Mock scan_cache_dir to return cached models
+    mock_cache_info = MagicMock()
+    mock_repo1 = MagicMock()
+    mock_repo1.repo_id = "meta-llama/test"
+    mock_repo2 = MagicMock()
+    mock_repo2.repo_id = "other/test"
+    mock_cache_info.repos = [mock_repo1, mock_repo2]
+
+    with patch("src.services.scan_cache_dir", return_value=mock_cache_info):
+        result = await service.get_cached_models(model_name_prefix="meta-llama")
+
+    # Should only include models starting with "meta-llama"
+    assert len(result) == 1
+    assert result[0]["id"] == "meta-llama/test"

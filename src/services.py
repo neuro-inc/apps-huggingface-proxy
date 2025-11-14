@@ -75,7 +75,7 @@ class HuggingFaceService:
             repo_id: Repository identifier (e.g., "meta-llama/Llama-3.1-8B-Instruct")
 
         Returns:
-            Model details dictionary
+            Model details dictionary with 'cached' field indicating source
         """
         try:
             logger.info("Fetching repo details", extra={"repo_id": repo_id})
@@ -95,6 +95,7 @@ class HuggingFaceService:
                     "gated": False,  # Default, can't determine from cache alone
                     "tags": [],  # Not available in cache
                     "lastModified": None,  # Cache has local mtime, not HF Hub timestamp
+                    "cached": True,
                 }
 
             # Model not cached, fetch from HuggingFace Hub
@@ -114,6 +115,7 @@ class HuggingFaceService:
                 "lastModified": (
                     model_info.lastModified.isoformat() if model_info.lastModified else None
                 ),
+                "cached": False,
             }
 
             return model_dict
@@ -156,6 +158,47 @@ class HuggingFaceService:
         except Exception as e:
             logger.debug("Error scanning cache directory", extra={"error": str(e)})
             return set()
+
+    async def get_cached_models(self, model_name_prefix: str | None = None) -> list[dict[str, Any]]:
+        """Get list of cached models with basic info without API calls.
+
+        Args:
+            model_name_prefix: Optional prefix to filter model names
+
+        Returns:
+            List of model dictionaries with basic cached info
+        """
+        if not self.cache_dir:
+            logger.debug("Cache directory not configured")
+            return []
+
+        try:
+            # Run cache scan in thread pool (it's a blocking operation)
+            cache_info = await asyncio.to_thread(scan_cache_dir, self.cache_dir)
+
+            cached_models = []
+            for repo in cache_info.repos:
+                repo_id = repo.repo_id
+                # Filter by prefix if provided
+                if model_name_prefix is None or repo_id.startswith(model_name_prefix):
+                    cached_models.append({
+                        "id": repo_id,
+                        "modelId": repo_id,
+                        "private": False,  # Default, can't determine from cache alone
+                        "gated": False,  # Default, can't determine from cache alone
+                        "tags": [],  # Not available in cache
+                        "lastModified": None,  # Cache has local mtime, not HF Hub timestamp
+                        "cached": True,
+                    })
+
+            logger.info(
+                "Found cached models",
+                extra={"count": len(cached_models), "prefix": model_name_prefix},
+            )
+            return cached_models
+        except Exception as e:
+            logger.debug("Error scanning cache directory", extra={"error": str(e)})
+            return []
 
     async def is_model_cached(self, repo_id: str) -> bool:
         """Check if a specific model is cached locally using HF Hub utilities.
