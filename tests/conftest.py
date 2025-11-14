@@ -1,7 +1,6 @@
 """Pytest configuration and fixtures."""
 
-from typing import AsyncIterator
-from unittest.mock import Mock
+from collections.abc import AsyncIterator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -56,6 +55,7 @@ def mock_hf_repo_response():
         "gated": True,
         "tags": ["text-generation", "llama", "pytorch"],
         "lastModified": "2024-07-23T14:48:00.000Z",
+        "cached": False,
         "siblings": [
             {
                 "rfilename": "config.json",

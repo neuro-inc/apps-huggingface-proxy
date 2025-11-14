@@ -4,22 +4,22 @@ import asyncio
 import logging
 import os
 import signal
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Annotated, Any, AsyncIterator
+from typing import Annotated, Any
 
-from fastapi import FastAPI, Query
+from apolo_app_types import (
+    DynamicAppBasicResponse,
+    DynamicAppFilterParams,
+    DynamicAppIdResponse,
+    DynamicAppListResponse,
+)
+from fastapi import Depends, FastAPI
 
 from src.config import Config
 from src.dependencies import DepHFService
 from src.logging import setup_logging
-from src.models import (
-    BasicResponse,
-    FilterParams,
-    HFModel,
-    IdResponse,
-    ListResponse,
-    ModelResponse,
-)
+from src.models import HFModel, ModelResponse
 
 
 class App(FastAPI):
@@ -59,6 +59,8 @@ app = App(
 app.config = Config(
     hf_api_base_url=os.getenv("HF_API_BASE_URL", "https://huggingface.co/api"),
     hf_timeout=int(os.getenv("HF_TIMEOUT", "30")),
+    hf_token=os.getenv("HF_TOKEN"),
+    hf_cache_dir=os.getenv("HF_CACHE_DIR", "/root/.cache/huggingface"),
     log_level=os.getenv("LOG_LEVEL", "INFO"),
     log_json=os.getenv("LOG_JSON", "true").lower() == "true",
     port=int(os.getenv("PORT", "8080")),
@@ -72,54 +74,82 @@ logger = logging.getLogger(__name__)
 @app.get("/")
 @app.get("/health")
 @app.get("/healthz")
-async def root() -> BasicResponse:
-    return BasicResponse(status="healthy")
+async def root() -> DynamicAppBasicResponse:
+    return DynamicAppBasicResponse(status="healthy")
 
 
 @app.get("/outputs")
 async def list_outputs(
-    filter_params: Annotated[FilterParams, Query()],
+    filter_params: Annotated[DynamicAppFilterParams, Depends()],
     hf_service: DepHFService,
-) -> ListResponse:
+) -> DynamicAppListResponse:
     """List available models from HuggingFace."""
     try:
-        logger.info("Fetching outputs list")
+        # Parse cached_only from filter string
+        cached_only = False
+        query = filter_params.filter
+        if query:
+            query_lower = query.lower()
+            if "cached_only" in query_lower:
+                cached_only = True
+                # Remove cached_only from query for model filtering
+                query = query.replace("cached_only", "").replace("CACHED_ONLY", "")
+                query = query.strip()
+                if not query:
+                    query = None
+
+        logger.info("Fetching outputs list", extra={"cached_only": cached_only})
 
         async with hf_service:
-            hf_response = await hf_service.search_models(limit=filter_params.limit)
+            if cached_only:
+                # Only return cached models without HF Hub API call
+                logger.info("Fetching cached models only, skipping HF Hub API")
+                hf_response = await hf_service.get_cached_models(model_name_prefix=query)
+            else:
+                # Search HF Hub and local cache in parallel
+                hf_search_task = asyncio.create_task(
+                    hf_service.search_models(limit=filter_params.limit)
+                )
+                local_search_task = asyncio.create_task(
+                    hf_service.search_cache(model_name_prefix=query)
+                )
 
+                hf_response, cached_models = await asyncio.gather(
+                    hf_search_task, local_search_task
+                )
+
+                # Mark which models are cached
+                for model in hf_response:
+                    if isinstance(model, dict):
+                        repo_id = model.get("id", model.get("modelId", ""))
+                        model["cached"] = repo_id in cached_models
+
+        # Convert to HFModel objects
         models = []
         for model in hf_response:
             if isinstance(model, dict):
+                repo_id = model.get("id", model.get("modelId", ""))
                 hf_model = HFModel(
-                    repo_id=model.get("id", model.get("modelId", "")),
+                    repo_id=repo_id,
                     visibility="private" if model.get("private") else "public",
                     gated=model.get("gated", False),
                     tags=model.get("tags", []),
-                    cached=False,
+                    cached=model.get("cached", False),
                     last_modified=model.get("lastModified"),
                 )
                 models.append(hf_model)
 
-        if filter_params.filter:
-            models = [
-                m
-                for m in models
-                if filter_params.filter.lower() in m.repo_id.lower()
-                or any(filter_params.filter.lower() in tag.lower() for tag in m.tags)
-            ]
-
         if filter_params.limit:
             models = models[filter_params.offset : filter_params.offset + filter_params.limit]
 
-        return ListResponse(
+        return DynamicAppListResponse(
             status="success",
-            data=[IdResponse(id=model.repo_id, value=model) for model in models],
+            data=[DynamicAppIdResponse(id=model.repo_id, value=model) for model in models],
         )
 
     except Exception as e:
         logger.error("Failed to fetch outputs", extra={"error": str(e)})
-        return ListResponse(status="error", data=None)
+        return DynamicAppListResponse(status="error", data=None)
 
 
 @app.get("/outputs/{repo_id:path}")
@@ -133,13 +163,14 @@ async def get_output_detail(
 
         async with hf_service:
             hf_response = await hf_service.get_repo_details(repo_id)
+            model_repo_id = hf_response.get("id", hf_response.get("modelId", repo_id))
 
         model = HFModel(
-            repo_id=hf_response.get("id", hf_response.get("modelId", repo_id)),
+            repo_id=model_repo_id,
             visibility="private" if hf_response.get("private") else "public",
             gated=hf_response.get("gated", False),
             tags=hf_response.get("tags", []),
-            cached=False,
+            cached=hf_response.get("cached", False),
             last_modified=hf_response.get("lastModified"),
         )
 
