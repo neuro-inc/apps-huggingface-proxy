@@ -1,52 +1,83 @@
 """Output processor for HuggingFace Proxy App."""
 
-from typing import Any
+import typing as t
 
-from .types import HfProxyInputs, HfProxyOutputs
+from apolo_app_types.clients.kube import get_service_host_port
+from apolo_app_types.outputs.base import BaseAppOutputsProcessor
+from apolo_app_types.outputs.common import INSTANCE_LABEL
+from apolo_app_types.protocols.common.hugging_face import HuggingFaceCache, HuggingFaceToken
+from apolo_app_types.protocols.common.networking import WebApp
+from apolo_app_types.protocols.common.secrets_ import ApoloSecret
+from apolo_app_types.protocols.common.storage import ApoloFilesPath
+
+from .types import HfProxyOutputs
 
 
-class HfProxyOutputProcessor:
+class HfProxyOutputProcessor(BaseAppOutputsProcessor[HfProxyOutputs]):
     """Processes Helm deployment outputs into app outputs."""
 
-    def __init__(
+    async def _generate_outputs(
         self,
-        k8s_client: Any,
+        helm_values: dict[str, t.Any],
         app_instance_id: str,
-        app_namespace: str,
-        inputs: HfProxyInputs,
-    ):
-        """Initialize the processor."""
-        self.k8s_client = k8s_client
-        self.app_instance_id = app_instance_id
-        self.app_namespace = app_namespace
-        self.inputs = inputs
+    ) -> HfProxyOutputs:
+        """Generate outputs from Helm deployment.
 
-    async def gen_outputs(self) -> HfProxyOutputs:
-        """Extract outputs from Kubernetes deployment."""
-        # Get service information
-        service_name = await self._get_service_name()
-        namespace = self.app_namespace
+        Args:
+            helm_values: The Helm chart values used for deployment
+            app_instance_id: The app instance identifier
 
-        # Construct internal URL
-        # Format: http://{service-name}.{namespace}.svc.cluster.local:{port}
-        internal_url = f"http://{service_name}.{namespace}.svc.cluster.local:8080"
+        Returns:
+            HfProxyOutputs with internal URL and configuration
+        """
+        # Build labels to find the service
+        labels = {
+            "application": "hf-proxy",
+            INSTANCE_LABEL: app_instance_id,
+        }
+
+        # Get internal service host and port
+        internal_host, internal_port = await get_service_host_port(match_labels=labels)
+
+        # Build internal URL
+        internal_url = ""
+        if internal_host:
+            web_app = WebApp(
+                host=internal_host,
+                port=int(internal_port),
+                base_path="/",
+                protocol="http",
+            )
+            internal_url = web_app.complete_url
+
+        # Reconstruct cache_config from helm_values
+        # The storage URI is in the pod annotations as JSON
+        storage_uri = "storage:.apps/hugging-face-cache"  # Default
+        if "podAnnotations" in helm_values:
+            import json
+
+            storage_annotation = helm_values["podAnnotations"].get(
+                "platform.apolo.us/inject-storage"
+            )
+            if storage_annotation:
+                storage_config = json.loads(storage_annotation)
+                if storage_config and len(storage_config) > 0:
+                    storage_uri = storage_config[0].get("storage_uri", storage_uri)
+
+        cache_config = HuggingFaceCache(files_path=ApoloFilesPath(path=storage_uri))
+
+        # Reconstruct token from helm_values
+        token_secret = helm_values.get("hf_token_secret", {})
+        token_name = token_secret.get("name", "hf-token")
+        token_key = token_secret.get("key", "HF_TOKEN")
+
+        token = HuggingFaceToken(
+            token_name=token_name,
+            token=ApoloSecret(key=token_key),
+        )
 
         return HfProxyOutputs(
-            cache_config=self.inputs.cache_config,
-            token=self.inputs.token,
+            cache_config=cache_config,
+            token=token,
             internal_url=internal_url,
         )
-
-    async def _get_service_name(self) -> str:
-        """Get the service name from Kubernetes."""
-        # Query Kubernetes for the service with label output-server=true
-        services = await self.k8s_client.list_namespaced_service(
-            namespace=self.app_namespace,
-            label_selector=f"app.kubernetes.io/instance={self.app_instance_id},output-server=true",
-        )
-
-        if not services.items:
-            # Fallback to default naming
-            return f"hf-proxy-{self.app_instance_id}"
-
-        return services.items[0].metadata.name

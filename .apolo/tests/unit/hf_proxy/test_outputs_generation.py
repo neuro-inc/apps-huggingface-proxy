@@ -1,6 +1,7 @@
 """Tests for HuggingFace Proxy output generation."""
 
-from unittest.mock import AsyncMock, MagicMock
+import json
+from unittest.mock import patch
 
 import pytest
 from apolo_app_types.protocols.common.hugging_face import HuggingFaceCache, HuggingFaceToken
@@ -8,13 +9,6 @@ from apolo_app_types.protocols.common.secrets_ import ApoloSecret
 from apolo_app_types.protocols.common.storage import ApoloFilesPath
 from apolo_apps_hf_proxy.outputs_processor import HfProxyOutputProcessor
 from apolo_apps_hf_proxy.types import HfProxyInputs
-
-
-@pytest.fixture
-def mock_kubernetes_client():
-    """Mock Kubernetes client for testing."""
-    client = AsyncMock()
-    return client
 
 
 @pytest.fixture
@@ -28,112 +22,150 @@ def test_inputs():
     )
 
 
+@pytest.fixture
+def helm_values_basic(test_inputs):
+    """Basic helm values fixture."""
+    storage_config = [
+        {
+            "storage_uri": test_inputs.cache_config.files_path.path,
+            "mount_path": "/root/.cache/huggingface",
+            "mount_mode": "rw",
+        }
+    ]
+
+    return {
+        "image": {
+            "repository": "hf-proxy",
+            "tag": "latest",
+        },
+        "podAnnotations": {
+            "platform.apolo.us/inject-storage": json.dumps(storage_config),
+        },
+        "hf_token_secret": {
+            "name": test_inputs.token.token_name,
+            "key": test_inputs.token.token.key,
+        },
+    }
+
+
 @pytest.mark.asyncio
-async def test_hf_proxy_internal_url_generation(
-    mock_kubernetes_client, app_instance_id, app_namespace, test_inputs
-):
+async def test_hf_proxy_internal_url_generation(app_instance_id, helm_values_basic, test_inputs):
     """Test internal URL generation."""
-    # Arrange
-    service_name = f"hf-proxy-{app_instance_id}"
+    service_host = f"hf-proxy-{app_instance_id}.default.svc.cluster.local"
+    service_port = "8080"
 
-    # Mock service list response
-    mock_service = MagicMock()
-    mock_service.metadata.name = service_name
+    processor = HfProxyOutputProcessor()
 
-    mock_service_list = MagicMock()
-    mock_service_list.items = [mock_service]
+    with patch("apolo_apps_hf_proxy.outputs_processor.get_service_host_port") as mock_get_service:
+        mock_get_service.return_value = (service_host, service_port)
 
-    mock_kubernetes_client.list_namespaced_service = AsyncMock(return_value=mock_service_list)
+        outputs = await processor._generate_outputs(helm_values_basic, app_instance_id)
 
-    processor = HfProxyOutputProcessor(
-        k8s_client=mock_kubernetes_client,
-        app_instance_id=app_instance_id,
-        app_namespace=app_namespace,
-        inputs=test_inputs,
-    )
+        expected_url = f"http://{service_host}:{service_port}/"
+        assert outputs.internal_url == expected_url
+        assert outputs.cache_config == test_inputs.cache_config
+        assert outputs.token == test_inputs.token
 
-    # Act
-    outputs = await processor.gen_outputs()
-
-    # Assert
-    expected_url = f"http://{service_name}.{app_namespace}.svc.cluster.local:8080"
-    assert outputs.internal_url == expected_url
-    assert outputs.cache_config == test_inputs.cache_config
-    assert outputs.token == test_inputs.token
-
-    # Verify Kubernetes client was called correctly
-    mock_kubernetes_client.list_namespaced_service.assert_called_once()
-    call_kwargs = mock_kubernetes_client.list_namespaced_service.call_args.kwargs
-    assert call_kwargs["namespace"] == app_namespace
-    assert f"app.kubernetes.io/instance={app_instance_id}" in call_kwargs["label_selector"]
-    assert "output-server=true" in call_kwargs["label_selector"]
+        # Verify get_service_host_port was called with correct labels
+        mock_get_service.assert_called_once()
+        call_args = mock_get_service.call_args
+        labels = call_args.kwargs["match_labels"]
+        assert labels["application"] == "hf-proxy"
+        assert labels["app.kubernetes.io/instance"] == app_instance_id
 
 
 @pytest.mark.asyncio
-async def test_hf_proxy_fallback_service_name(
-    mock_kubernetes_client, app_instance_id, app_namespace, test_inputs
-):
-    """Test fallback to default service name when service not found."""
+async def test_hf_proxy_no_service_found(app_instance_id, helm_values_basic, test_inputs):
+    """Test when no service is found (returns empty string)."""
     # Arrange
-    # Mock empty service list
-    mock_service_list = MagicMock()
-    mock_service_list.items = []
+    processor = HfProxyOutputProcessor()
 
-    mock_kubernetes_client.list_namespaced_service = AsyncMock(return_value=mock_service_list)
+    with patch("apolo_apps_hf_proxy.outputs_processor.get_service_host_port") as mock_get_service:
+        mock_get_service.return_value = (None, None)
 
-    processor = HfProxyOutputProcessor(
-        k8s_client=mock_kubernetes_client,
-        app_instance_id=app_instance_id,
-        app_namespace=app_namespace,
-        inputs=test_inputs,
-    )
+        outputs = await processor._generate_outputs(helm_values_basic, app_instance_id)
 
-    # Act
-    outputs = await processor.gen_outputs()
-
-    # Assert - Should use fallback service name
-    expected_service_name = f"hf-proxy-{app_instance_id}"
-    expected_url = f"http://{expected_service_name}.{app_namespace}.svc.cluster.local:8080"
-    assert outputs.internal_url == expected_url
-    assert outputs.cache_config == test_inputs.cache_config
-    assert outputs.token == test_inputs.token
+        # Assert - Should return empty string when no service found
+        assert outputs.internal_url == ""
+        assert outputs.cache_config == test_inputs.cache_config
+        assert outputs.token == test_inputs.token
 
 
 @pytest.mark.asyncio
-async def test_hf_proxy_output_structure(
-    mock_kubernetes_client, app_instance_id, app_namespace, test_inputs
-):
+async def test_hf_proxy_output_structure(app_instance_id, helm_values_basic, test_inputs):
     """Test that output structure matches the expected schema."""
     # Arrange
-    service_name = f"hf-proxy-{app_instance_id}"
+    service_host = f"hf-proxy-{app_instance_id}.default.svc.cluster.local"
+    service_port = "8080"
 
-    # Mock service
-    mock_service = MagicMock()
-    mock_service.metadata.name = service_name
+    processor = HfProxyOutputProcessor()
 
-    mock_service_list = MagicMock()
-    mock_service_list.items = [mock_service]
+    with patch("apolo_apps_hf_proxy.outputs_processor.get_service_host_port") as mock_get_service:
+        mock_get_service.return_value = (service_host, service_port)
 
-    mock_kubernetes_client.list_namespaced_service = AsyncMock(return_value=mock_service_list)
+        outputs = await processor._generate_outputs(helm_values_basic, app_instance_id)
 
-    processor = HfProxyOutputProcessor(
-        k8s_client=mock_kubernetes_client,
-        app_instance_id=app_instance_id,
-        app_namespace=app_namespace,
-        inputs=test_inputs,
-    )
+        assert hasattr(outputs, "internal_url")
+        assert hasattr(outputs, "cache_config")
+        assert hasattr(outputs, "token")
+        assert isinstance(outputs.internal_url, str)
+        assert outputs.cache_config == test_inputs.cache_config
+        assert outputs.token == test_inputs.token
 
-    # Act
-    outputs = await processor.gen_outputs()
+        assert outputs.internal_url.startswith("http://")
+        assert service_host in outputs.internal_url
 
-    # Assert - Check structure
-    assert hasattr(outputs, "internal_url")
-    assert hasattr(outputs, "cache_config")
-    assert hasattr(outputs, "token")
-    assert isinstance(outputs.internal_url, str)
-    assert outputs.cache_config == test_inputs.cache_config
-    assert outputs.token == test_inputs.token
 
-    # Verify internal URL format
-    assert outputs.internal_url.startswith("http://")
-    assert ".svc.cluster.local:8080" in outputs.internal_url
+@pytest.mark.asyncio
+async def test_hf_proxy_custom_storage_uri(app_instance_id, test_inputs):
+    """Test custom storage URI in helm values."""
+    # Arrange
+    custom_storage_uri = "storage://default/org/project/custom-hf-cache"
+
+    storage_config = [
+        {
+            "storage_uri": custom_storage_uri,
+            "mount_path": "/root/.cache/huggingface",
+            "mount_mode": "rw",
+        }
+    ]
+
+    helm_values = {
+        "podAnnotations": {
+            "platform.apolo.us/inject-storage": json.dumps(storage_config),
+        },
+        "hf_token_secret": {
+            "name": test_inputs.token.token_name,
+            "key": test_inputs.token.token.key,
+        },
+    }
+
+    processor = HfProxyOutputProcessor()
+
+    with patch("apolo_apps_hf_proxy.outputs_processor.get_service_host_port") as mock_get_service:
+        mock_get_service.return_value = ("hf-proxy.default.svc.cluster.local", "8080")
+
+        # Act
+        outputs = await processor._generate_outputs(helm_values, app_instance_id)
+
+        # Assert - Custom storage URI should be in output
+        assert outputs.cache_config.files_path.path == custom_storage_uri
+
+
+@pytest.mark.asyncio
+async def test_hf_proxy_default_values_when_missing(app_instance_id):
+    """Test that defaults are used when values are missing from helm_values."""
+    # Arrange - Minimal helm_values
+    helm_values = {}
+
+    processor = HfProxyOutputProcessor()
+
+    with patch("apolo_apps_hf_proxy.outputs_processor.get_service_host_port") as mock_get_service:
+        mock_get_service.return_value = ("hf-proxy.default.svc.cluster.local", "8080")
+
+        outputs = await processor._generate_outputs(helm_values, app_instance_id)
+
+        assert outputs.cache_config.files_path.path == "storage:.apps/hugging-face-cache"
+        assert outputs.token.token_name == "hf-token"
+        assert outputs.token.token.key == "HF_TOKEN"
+        assert outputs.internal_url.startswith("http://")

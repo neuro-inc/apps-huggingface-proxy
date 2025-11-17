@@ -1,36 +1,17 @@
-"""Test configuration for HuggingFace Proxy App tests."""
-
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-
-@pytest.fixture
-def setup_clients():
-    """Setup Apolo clients for testing.
-
-    Note: In a real deployment, this would use apolo_app_types_fixtures.apolo_clients
-    For demonstration purposes, we return a mock object.
-    """
-    return {}
-
-
-@pytest.fixture
-def app_instance_id():
-    """Test app instance ID."""
-    return "test-hf-proxy-12345"
+pytest_plugins = [
+    "apolo_app_types_fixtures.apolo_clients",
+    "apolo_app_types_fixtures.constants",
+]
 
 
 @pytest.fixture
 def cluster_domain():
-    """Test cluster domain."""
-    return "apolo.dev"
-
-
-@pytest.fixture
-def app_namespace():
-    """Test app namespace."""
-    return "default"
+    """Cluster domain for testing."""
+    return "example.cluster.local"
 
 
 @pytest.fixture
@@ -43,6 +24,7 @@ def mock_apolo_client():
     cpu_small.nvidia_gpu = None
     cpu_small.amd_gpu = None
     cpu_small.credits_per_hour = 1.0
+    cpu_small.available_resource_pool_names = ["default"]
 
     cpu_medium = MagicMock()
     cpu_medium.cpu = 2.0
@@ -50,6 +32,7 @@ def mock_apolo_client():
     cpu_medium.nvidia_gpu = None
     cpu_medium.amd_gpu = None
     cpu_medium.credits_per_hour = 2.0
+    cpu_medium.available_resource_pool_names = ["default"]
 
     cpu_large = MagicMock()
     cpu_large.cpu = 4.0
@@ -57,6 +40,7 @@ def mock_apolo_client():
     cpu_large.nvidia_gpu = None
     cpu_large.amd_gpu = None
     cpu_large.credits_per_hour = 4.0
+    cpu_large.available_resource_pool_names = ["default"]
 
     # GPU preset (should be filtered out)
     gpu_preset = MagicMock()
@@ -66,6 +50,7 @@ def mock_apolo_client():
     gpu_preset.nvidia_gpu.count = 1
     gpu_preset.amd_gpu = None
     gpu_preset.credits_per_hour = 10.0
+    gpu_preset.available_resource_pool_names = ["gpu-pool"]
 
     # Too small preset (should be filtered out)
     cpu_tiny = MagicMock()
@@ -74,6 +59,7 @@ def mock_apolo_client():
     cpu_tiny.nvidia_gpu = None
     cpu_tiny.amd_gpu = None
     cpu_tiny.credits_per_hour = 0.5
+    cpu_tiny.available_resource_pool_names = ["default"]
 
     # Mock client
     client = MagicMock()
@@ -85,7 +71,7 @@ def mock_apolo_client():
         "cpu-tiny": cpu_tiny,
     }
 
-    # Mock capacity - all presets have capacity except cpu-large (for testing)
+    # Mock capacity
     async def mock_get_capacity():
         return {
             "cpu-small": 5,
@@ -96,5 +82,4 @@ def mock_apolo_client():
         }
 
     client.jobs.get_capacity = AsyncMock(side_effect=mock_get_capacity)
-
     return client
