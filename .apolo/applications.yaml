@@ -1,0 +1,28 @@
+kind: live
+version: v1
+
+applications:
+  - id: hf-proxy
+    title: HuggingFace Proxy
+    app_type: hf-proxy
+    install_type: workflow
+    helm_path: charts/hf-proxy
+    short_description: Production-ready proxy for HuggingFace API with caching
+    long_description: |
+      A scalable, production-ready proxy service for the HuggingFace API that provides:
+      - **Model Search & Details**: Browse and retrieve HuggingFace model information
+      - **Local Caching**: Persistent cache for model metadata and artifacts
+      - **Secure Access**: Optional authentication and token management
+      - **Cache-First Mode**: Retrieve only cached models without API calls
+      - **RESTful API**: FastAPI-based endpoints for easy integration
+
+      Perfect for organizations that need reliable access to HuggingFace models with
+      persistent caching and controlled access.
+    tags:
+      - Machine Learning
+      - HuggingFace
+      - API Proxy
+      - Model Management
+    docs_url: https://github.com/your-org/hf-proxy/blob/main/README.md
+    dockerfile: Dockerfile
+    requires_token: true

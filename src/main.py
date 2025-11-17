@@ -92,11 +92,6 @@ async def list_outputs(
             query_lower = query.lower()
             if "cached_only" in query_lower:
                 cached_only = True
-                # Remove cached_only from query for model filtering
-                query = query.replace("cached_only", "").replace("CACHED_ONLY", "")
-                query = query.strip()
-                if not query:
-                    query = None
 
         logger.info("Fetching outputs list", extra={"cached_only": cached_only})
 
@@ -114,9 +109,7 @@ async def list_outputs(
                     hf_service.search_cache(model_name_prefix=query)
                 )
 
-                hf_response, cached_models = await asyncio.gather(
-                    hf_search_task, local_search_task
-                )
+                hf_response, cached_models = await asyncio.gather(hf_search_task, local_search_task)
 
                 # Mark which models are cached
                 for model in hf_response:

@@ -1,4 +1,4 @@
-.PHONY: help install test lint format clean build push run dev
+.PHONY: help install setup test lint format clean build push run dev gen-types-schemas
 
 # Variables
 IMAGE_NAME ?= hf-proxy
@@ -14,6 +14,9 @@ help: ## Show this help message
 
 install: ## Install dependencies using poetry
 	poetry install
+
+setup: install ## Install dependencies and pre-commit hooks
+	poetry run pre-commit install
 
 test: ## Run tests with pytest
 	poetry run pytest
@@ -52,3 +55,7 @@ dev: ## Run development server with hot reload
 check: lint test ## Run linting and tests
 
 all: clean install lint test build ## Run all checks and build
+
+gen-types-schemas: ## Generate JSON schemas from Pydantic types
+	poetry run app-types dump-types-schema .apolo/src/apolo_apps_hf_proxy HfProxyInputs .apolo/src/apolo_apps_hf_proxy/schemas/HfProxyInputs.json
+	poetry run app-types dump-types-schema .apolo/src/apolo_apps_hf_proxy HfProxyOutputs .apolo/src/apolo_apps_hf_proxy/schemas/HfProxyOutputs.json
