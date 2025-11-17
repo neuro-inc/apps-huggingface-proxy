@@ -45,7 +45,9 @@ class HfProxyChartValueProcessor:
 
         for preset_name, preset in available_presets.items():
             # Filter 1: Must be CPU-only (no GPU)
-            if preset.nvidia_gpu or preset.amd_gpu:
+            has_nvidia_gpu = preset.nvidia_gpu and preset.nvidia_gpu.count > 0
+            has_amd_gpu = preset.amd_gpu and preset.amd_gpu.count > 0
+            if has_nvidia_gpu or has_amd_gpu:
                 logger.debug(f"Skipping preset {preset_name}: has GPU")
                 continue
 
