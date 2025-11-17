@@ -6,10 +6,8 @@ from apolo_apps_hf_proxy.types import HfProxyInputs, HfProxyOutputs
 
 __version__ = "0.1.0"
 
-APOLO_APP_TYPE = "hf-proxy"
 
 __all__ = [
-    "APOLO_APP_TYPE",
     "HfProxyChartValueProcessor",
     "HfProxyOutputProcessor",
     "HfProxyInputs",

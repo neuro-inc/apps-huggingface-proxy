@@ -1,28 +1,63 @@
-kind: live
-version: v1
+- app_type: hf-proxy
+  name: hf-proxy
+  title: HuggingFace
+  install_type: workflow
+  helm_path: charts/hf-proxy
+  app_package_name: apolo_apps_hf_proxy
+  inputs:
+    schema_path: .apolo/src/apolo_apps_hf_proxy/schemas/HfProxyInputs.json
+    types_name: HfProxyInputs
+    processor: HfProxyChartValueProcessor
+    image: ghcr.io/neuro-inc/hf-proxy
+  outputs:
+    schema_path: .apolo/src/apolo_apps_hf_proxy/schemas/HfProxyOutputs.json
+    types_name: HfProxyOutputs
+    processor: HfProxyOutputProcessor
+    image: ghcr.io/neuro-inc/hf-proxy
+  short_description: Production-ready proxy for HuggingFace API with caching
+  description: |
+    A scalable, production-ready proxy service for the HuggingFace API that provides
+    model search, details retrieval, and persistent caching capabilities.
 
-applications:
-  - id: hf-proxy
-    title: HuggingFace Proxy
-    app_type: hf-proxy
-    install_type: workflow
-    helm_path: charts/hf-proxy
-    short_description: Production-ready proxy for HuggingFace API with caching
-    long_description: |
-      A scalable, production-ready proxy service for the HuggingFace API that provides:
-      - **Model Search & Details**: Browse and retrieve HuggingFace model information
-      - **Local Caching**: Persistent cache for model metadata and artifacts
-      - **Secure Access**: Optional authentication and token management
-      - **Cache-First Mode**: Retrieve only cached models without API calls
-      - **RESTful API**: FastAPI-based endpoints for easy integration
+    Built with FastAPI and optimized for Kubernetes deployment, HuggingFace Proxy
+    offers reliable access to HuggingFace models with controlled access and efficient
+    caching to reduce API calls and improve performance.
 
-      Perfect for organizations that need reliable access to HuggingFace models with
-      persistent caching and controlled access.
-    tags:
-      - Machine Learning
-      - HuggingFace
-      - API Proxy
-      - Model Management
-    docs_url: https://github.com/your-org/hf-proxy/blob/main/README.md
-    dockerfile: Dockerfile
-    requires_token: true
+    Features:
+    - **Model Search & Discovery**: Browse and search HuggingFace model repository
+    - **Persistent Caching**: Store model metadata and artifacts in shared storage
+    - **Cache-First Mode**: Retrieve cached models without external API calls
+    - **Automatic Preset Selection**: Optimal CPU resource allocation based on cluster capacity
+    - **Storage Integration**: Seamless integration with Apolo platform storage
+    - **Token Management**: Secure HuggingFace API token handling via Apolo Secrets
+  pub_date: "2025-11-17T00:00:00+00:00"
+  logo: https://storage.googleapis.com/development-421920-assets/app-logos/huggingface.svg
+  changelog:
+    file: ./CHANGELOG.md
+  tags:
+    - "Machine Learning"
+    - "HuggingFace"
+    - "API Proxy"
+    - "Model Management"
+    - "Caching"
+    - "FastAPI"
+    - "MLOps"
+  assets:
+    - type: image
+      url: https://storage.googleapis.com/development-421920-assets/app-logos/huggingface-banner.png
+  urls:
+    - name: HuggingFace Proxy installation guide
+      type: documentation
+      url: https://docs.apolo.us/index/apolo-console/apps/installable-apps/available-apps/hf-proxy
+    - name: HuggingFace Models Hub
+      type: external
+      url: https://huggingface.co/models
+    - name: Apolo CLI
+      type: documentation
+      url: https://docs.apolo.us/index/apolo-concepts-cli/installing
+    - name: GitHub Repository
+      url: https://github.com/neuro-inc/hf-proxy
+      type: external
+    - name: FastAPI Documentation
+      url: https://fastapi.tiangolo.com/
+      type: documentation
