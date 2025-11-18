@@ -71,5 +71,3 @@ def mock_hf_repo_response():
             },
         ],
     }
-
-

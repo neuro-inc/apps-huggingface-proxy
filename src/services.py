@@ -181,15 +181,17 @@ class HuggingFaceService:
                 repo_id = repo.repo_id
                 # Filter by prefix if provided
                 if model_name_prefix is None or repo_id.startswith(model_name_prefix):
-                    cached_models.append({
-                        "id": repo_id,
-                        "modelId": repo_id,
-                        "private": False,  # Default, can't determine from cache alone
-                        "gated": False,  # Default, can't determine from cache alone
-                        "tags": [],  # Not available in cache
-                        "lastModified": None,  # Cache has local mtime, not HF Hub timestamp
-                        "cached": True,
-                    })
+                    cached_models.append(
+                        {
+                            "id": repo_id,
+                            "modelId": repo_id,
+                            "private": False,  # Default, can't determine from cache alone
+                            "gated": False,  # Default, can't determine from cache alone
+                            "tags": [],  # Not available in cache
+                            "lastModified": None,  # Cache has local mtime, not HF Hub timestamp
+                            "cached": True,
+                        }
+                    )
 
             logger.info(
                 "Found cached models",

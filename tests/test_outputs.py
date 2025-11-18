@@ -209,10 +209,10 @@ async def test_list_outputs_empty_response(client: TestClient):
 async def test_list_outputs_malformed_model_data(client: TestClient):
     """Test listing outputs with malformed model data."""
     malformed_response = [
-    {"id": "valid-model", "private": False},
-    "invalid-string-entry",
-    {"id": "another-valid", "private": True},
-    None,
+        {"id": "valid-model", "private": False},
+        "invalid-string-entry",
+        {"id": "another-valid", "private": True},
+        None,
     ]
     mock_service = create_mock_service(search_response=malformed_response)
     patch_hf_service(mock_service)
@@ -230,8 +230,8 @@ async def test_list_outputs_malformed_model_data(client: TestClient):
 async def test_list_outputs_with_missing_fields(client: TestClient):
     """Test listing outputs with models missing optional fields."""
     response_with_missing_fields = [
-    {"id": "minimal-model"},
-    {"id": "model-with-some-fields", "gated": True},
+        {"id": "minimal-model"},
+        {"id": "model-with-some-fields", "gated": True},
     ]
     mock_service = create_mock_service(search_response=response_with_missing_fields)
     patch_hf_service(mock_service)

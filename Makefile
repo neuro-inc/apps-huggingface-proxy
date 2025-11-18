@@ -1,10 +1,9 @@
-.PHONY: help install test lint format clean build push run dev
+.PHONY: help install setup test lint format clean build build-hook-image push push-hook-image run dev gen-types-schemas
 
 # Variables
-IMAGE_NAME ?= hf-proxy
+IMAGE_NAME ?= ghcr.io/neuro-inc/apps-huggingface-proxy
 IMAGE_TAG ?= latest
-REGISTRY ?= docker.io
-FULL_IMAGE_NAME = $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
+FULL_IMAGE_NAME = $(IMAGE_NAME):$(IMAGE_TAG)
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -14,6 +13,9 @@ help: ## Show this help message
 
 install: ## Install dependencies using poetry
 	poetry install
+
+setup: install ## Install dependencies and pre-commit hooks
+	poetry run pre-commit install
 
 test: ## Run tests with pytest
 	poetry run pytest
@@ -34,17 +36,22 @@ clean: ## Clean up build artifacts
 	rm -rf dist/ build/ htmlcov/
 
 build: ## Build Docker image
-	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
-	@echo "Image built: $(IMAGE_NAME):$(IMAGE_TAG)"
-	@docker images $(IMAGE_NAME):$(IMAGE_TAG)
+	docker build -t $(FULL_IMAGE_NAME) .
+	@echo "Image built: $(FULL_IMAGE_NAME)"
+	@docker images $(FULL_IMAGE_NAME)
+
+build-hook-image: ## Build hook image (alias for build)
+	$(MAKE) build
 
 push: ## Push Docker image to registry
-	docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(FULL_IMAGE_NAME)
 	docker push $(FULL_IMAGE_NAME)
 	@echo "Image pushed: $(FULL_IMAGE_NAME)"
 
+push-hook-image: ## Push hook image (alias for push)
+	$(MAKE) push
+
 run: ## Run Docker container locally
-	docker run --rm -p 8080:8080 --name hf-proxy-instance $(IMAGE_NAME):$(IMAGE_TAG)
+	docker run --rm -p 8080:8080 --name hf-proxy-instance $(FULL_IMAGE_NAME)
 
 dev: ## Run development server with hot reload
 	poetry run uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload
@@ -52,3 +59,7 @@ dev: ## Run development server with hot reload
 check: lint test ## Run linting and tests
 
 all: clean install lint test build ## Run all checks and build
+
+gen-types-schemas: ## Generate JSON schemas from Pydantic types
+	poetry run app-types dump-types-schema .apolo/src/apolo_apps_hf_proxy HfProxyInputs .apolo/src/apolo_apps_hf_proxy/schemas/HfProxyInputs.json
+	poetry run app-types dump-types-schema .apolo/src/apolo_apps_hf_proxy HfProxyOutputs .apolo/src/apolo_apps_hf_proxy/schemas/HfProxyOutputs.json
