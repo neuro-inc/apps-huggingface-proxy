@@ -41,7 +41,6 @@ async def test_hf_proxy_outputs(setup_clients, mock_kubernetes_client):
     assert res["cache_config"]["files_path"]["path"] == storage_uri
     assert res["token"]["token_name"] == "hf-token"
     assert res["token"]["token"]["key"] == "HF_TOKEN"
-    assert res["internal_url"] == "http://app.default-namespace:80/"
 
 
 @pytest.mark.asyncio
@@ -95,4 +94,3 @@ async def test_hf_proxy_outputs_with_defaults(setup_clients, mock_kubernetes_cli
     assert res["cache_config"]["files_path"]["path"] == "storage:.apps/hugging-face-cache"
     assert res["token"]["token_name"] == "hf-token"
     assert res["token"]["token"]["key"] == "HF_TOKEN"
-    assert res["internal_url"] == "http://app.default-namespace:80/"

@@ -40,8 +40,8 @@ CPU_PRESETS = {
         available_resource_pool_names=(CPU_POOL,),
     ),
     "cpu-tiny": Preset(
-        cpu=0.25,
-        memory=512e6,  # 512MB - below minimum requirements
+        cpu=0.05,
+        memory=256e6,  # 256MB - below minimum requirements
         nvidia_gpu=NvidiaGPUPreset(count=0),
         credits_per_hour=Decimal("0.5"),
         available_resource_pool_names=(CPU_POOL,),

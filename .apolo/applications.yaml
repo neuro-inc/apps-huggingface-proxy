@@ -8,12 +8,12 @@
     schema_path: .apolo/src/apolo_apps_hf_proxy/schemas/HfProxyInputs.json
     types_name: HfProxyInputs
     processor: HfProxyChartValueProcessor
-    image: ghcr.io/neuro-inc/hf-proxy
+    image: ghcr.io/neuro-inc/apps-huggingface-proxy
   outputs:
     schema_path: .apolo/src/apolo_apps_hf_proxy/schemas/HfProxyOutputs.json
     types_name: HfProxyOutputs
     processor: HfProxyOutputProcessor
-    image: ghcr.io/neuro-inc/hf-proxy
+    image: ghcr.io/neuro-inc/apps-huggingface-proxy
   short_description: Production-ready proxy for HuggingFace API with caching
   description: |
     A scalable, production-ready proxy service for the HuggingFace API that provides

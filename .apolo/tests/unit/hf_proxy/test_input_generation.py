@@ -34,7 +34,7 @@ async def test_hf_proxy_basic_values_generation(
     values = await processor.gen_extra_values()
 
     # Assert - Image configuration
-    assert values["image"]["repository"] == "hf-proxy"
+    assert values["image"]["repository"] == "ghcr.io/neuro-inc/apps-huggingface-proxy"
     assert values["image"]["tag"] == "latest"
     assert values["image"]["pullPolicy"] == "Always"
 
@@ -276,8 +276,14 @@ async def test_hf_proxy_preset_prefers_higher_capacity_when_equal_cost(
     setup_clients, app_instance_id, cluster_domain, mock_apolo_client
 ):
     """Test that when costs are equal, preset with more capacity is selected."""
-    # Arrange - Make cpu-medium same cost as cpu-small but more capacity
-    mock_apolo_client.config.presets["cpu-medium"].credits_per_hour = 1.0  # Same as cpu-small
+    # Arrange - Make cpu-medium same cost as cpu-small
+    from dataclasses import replace
+    from decimal import Decimal
+
+    cpu_medium_updated = replace(
+        mock_apolo_client.config.presets["cpu-medium"], credits_per_hour=Decimal("1.0")
+    )
+    mock_apolo_client.config.presets["cpu-medium"] = cpu_medium_updated
 
     # cpu-small has capacity=5, cpu-medium has capacity=3
     # With same cost, should still prefer cpu-small (more capacity: 5 > 3)

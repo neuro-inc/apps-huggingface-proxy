@@ -2,11 +2,8 @@
 
 import typing as t
 
-from apolo_app_types.clients.kube import get_service_host_port
 from apolo_app_types.outputs.base import BaseAppOutputsProcessor
-from apolo_app_types.outputs.common import INSTANCE_LABEL
 from apolo_app_types.protocols.common.hugging_face import HuggingFaceCache, HuggingFaceToken
-from apolo_app_types.protocols.common.networking import WebApp
 from apolo_app_types.protocols.common.secrets_ import ApoloSecret
 from apolo_app_types.protocols.common.storage import ApoloFilesPath
 
@@ -28,28 +25,8 @@ class HfProxyOutputProcessor(BaseAppOutputsProcessor[HfProxyOutputs]):
             app_instance_id: The app instance identifier
 
         Returns:
-            HfProxyOutputs with internal URL and configuration
+            HfProxyOutputs with configuration
         """
-        # Build labels to find the service
-        labels = {
-            "application": "hf-proxy",
-            INSTANCE_LABEL: app_instance_id,
-        }
-
-        # Get internal service host and port
-        internal_host, internal_port = await get_service_host_port(match_labels=labels)
-
-        # Build internal URL
-        internal_url = ""
-        if internal_host:
-            web_app = WebApp(
-                host=internal_host,
-                port=int(internal_port),
-                base_path="/",
-                protocol="http",
-            )
-            internal_url = web_app.complete_url
-
         # Reconstruct cache_config from helm_values
         # The storage URI is in the pod annotations as JSON
         storage_uri = "storage:.apps/hugging-face-cache"  # Default
@@ -79,5 +56,4 @@ class HfProxyOutputProcessor(BaseAppOutputsProcessor[HfProxyOutputs]):
         return HfProxyOutputs(
             cache_config=cache_config,
             token=token,
-            internal_url=internal_url,
         )

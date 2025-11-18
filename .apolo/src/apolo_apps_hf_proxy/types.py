@@ -31,8 +31,3 @@ class HfProxyOutputs(AppOutputs):
         ...,
         description="HuggingFace API token",
     )
-
-    internal_url: str = Field(
-        ...,
-        description="Internal service URL accessible within the cluster",
-    )

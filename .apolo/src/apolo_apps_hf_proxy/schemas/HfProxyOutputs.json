@@ -221,17 +221,11 @@
     "token": {
       "$ref": "#/$defs/HuggingFaceToken",
       "description": "HuggingFace API token"
-    },
-    "internal_url": {
-      "description": "Internal service URL accessible within the cluster",
-      "title": "Internal Url",
-      "type": "string"
     }
   },
   "required": [
     "cache_config",
-    "token",
-    "internal_url"
+    "token"
   ],
   "title": "HfProxyOutputs",
   "type": "object"

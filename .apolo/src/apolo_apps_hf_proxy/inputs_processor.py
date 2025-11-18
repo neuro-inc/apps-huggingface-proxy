@@ -57,18 +57,18 @@ class HfProxyChartValueProcessor:
                 logger.debug(f"Skipping preset {preset_name}: no capacity")
                 continue
 
-            # Filter 3: Must meet minimum requirements (0.5 CPU, 1Gi RAM)
+            # Filter 3: Must meet minimum requirements (0.1 CPU, 0.5Gi RAM)
             cpu = preset.cpu or 0
             memory_bytes = preset.memory or 0
             memory_gb = memory_bytes / 1e9
 
-            if cpu < 0.5:
-                logger.debug(f"Skipping preset {preset_name}: insufficient CPU ({cpu} < 0.5)")
+            if cpu < 0.1:
+                logger.debug(f"Skipping preset {preset_name}: insufficient CPU ({cpu} < 0.1)")
                 continue
 
-            if memory_gb < 1:
+            if memory_gb < 0.5:
                 logger.debug(
-                    f"Skipping preset {preset_name}: insufficient memory ({memory_gb}Gi < 1Gi)"
+                    f"Skipping preset {preset_name}: insufficient memory ({memory_gb}Gi < 0.5Gi)"
                 )
                 continue
 
@@ -91,7 +91,7 @@ class HfProxyChartValueProcessor:
         if not candidates:
             msg = (
                 "No suitable CPU preset found for hf-proxy. "
-                "Requirements: CPU >= 0.5, Memory >= 1Gi, no GPU, capacity > 0"
+                "Requirements: CPU >= 0.1, Memory >= 0.5Gi, no GPU, capacity > 0"
             )
             raise RuntimeError(msg)
 
@@ -147,7 +147,7 @@ class HfProxyChartValueProcessor:
         values: dict[str, Any] = {
             # Image configuration
             "image": {
-                "repository": "hf-proxy",
+                "repository": "ghcr.io/neuro-inc/apps-huggingface-proxy",
                 "tag": "latest",
                 "pullPolicy": "Always",
             },
