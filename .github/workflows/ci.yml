@@ -50,11 +50,6 @@ jobs:
     steps:
       - name: Checkout commit
         uses: actions/checkout@v4
-      - name: Purge old artifacts
-        uses: kolpav/purge-artifacts-action@v1
-        with:
-          token: ${{ github.token }}
-          expire-in: 30mins
       - name: Login to ghcr.io
         uses: docker/login-action@v3.5.0
         with:
