@@ -1,4 +1,4 @@
-- app_type: hf-proxy
+- app_type: huggingface
   name: hf-proxy
   title: HuggingFace
   install_type: workflow
