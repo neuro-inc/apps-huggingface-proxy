@@ -45,8 +45,8 @@ build-hook-image:
 
 .PHONY: push-hook-image
 push-hook-image:
-	docker tag $(IMAGE_NAME):latest ghcr.io/neuro-inc/$(IMAGE_NAME):$(IMAGE_TAG)
-	docker push ghcr.io/neuro-inc/$(IMAGE_NAME):$(IMAGE_TAG)
+	docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG)
+	docker push $(IMAGE_NAME):$(IMAGE_TAG)
 
 run: ## Run Docker container locally
 	docker run --rm -p 8080:8080 --name hf-proxy-instance $(IMAGE_NAME):latest
