@@ -1,9 +1,9 @@
 replicaCount: 1
 
 image:
-  repository: hf-proxy
+  repository: ghcr.io/neuro-inc/apps-huggingface-proxy
   pullPolicy: Always
-  tag: "latest"
+  tag: "master"
 
 container:
   env:

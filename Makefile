@@ -1,9 +1,12 @@
 .PHONY: help install setup test lint format clean build build-hook-image push push-hook-image run dev gen-types-schemas
 
 # Variables
-IMAGE_NAME ?= ghcr.io/neuro-inc/apps-huggingface-proxy
+IMAGE_NAME ?= ghcr.io/neuro-inc/apps-huggingface-proxy-hooks
 IMAGE_TAG ?= latest
-FULL_IMAGE_NAME = $(IMAGE_NAME):$(IMAGE_TAG)
+
+APP_IMAGE_NAME ?= ghcr.io/neuro-inc/apps-huggingface-proxy
+APP_IMAGE_TAG ?= latest
+
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -43,10 +46,23 @@ build-hook-image:
 		-f hooks.Dockerfile \
 		.;
 
-.PHONY: push-hook-image
+
+.PHONY: build-app-image
+build-app-image:
+	docker build \
+		-t $(APP_IMAGE_NAME):latest \
+		-f Dockerfile \
+		.;
+
+.PHONY: push-app-image
 push-hook-image:
 	docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG)
 	docker push $(IMAGE_NAME):$(IMAGE_TAG)
+
+.PHONY: push-app-image
+push-app-image:
+	docker tag $(APP_IMAGE_NAME):latest $(APP_IMAGE_NAME):$(APP_IMAGE_TAG)
+	docker push $(APP_IMAGE_NAME):$(APP_IMAGE_TAG)
 
 run: ## Run Docker container locally
 	docker run --rm -p 8080:8080 --name hf-proxy-instance $(IMAGE_NAME):latest
