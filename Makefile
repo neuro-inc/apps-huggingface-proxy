@@ -35,23 +35,21 @@ clean: ## Clean up build artifacts
 	find . -type f -name ".coverage" -delete
 	rm -rf dist/ build/ htmlcov/
 
-build: ## Build Docker image
-	docker build -t $(FULL_IMAGE_NAME) .
-	@echo "Image built: $(FULL_IMAGE_NAME)"
-	@docker images $(FULL_IMAGE_NAME)
 
-build-hook-image: ## Build hook image (alias for build)
-	$(MAKE) build
+.PHONY: build-hook-image
+build-hook-image:
+	docker build \
+		-t $(IMAGE_NAME):latest \
+		-f hooks.Dockerfile \
+		.;
 
-push: ## Push Docker image to registry
-	docker push $(FULL_IMAGE_NAME)
-	@echo "Image pushed: $(FULL_IMAGE_NAME)"
-
-push-hook-image: ## Push hook image (alias for push)
-	$(MAKE) push
+.PHONY: push-hook-image
+push-hook-image:
+	docker tag $(IMAGE_NAME):latest ghcr.io/neuro-inc/$(IMAGE_NAME):$(IMAGE_TAG)
+	docker push ghcr.io/neuro-inc/$(IMAGE_NAME):$(IMAGE_TAG)
 
 run: ## Run Docker container locally
-	docker run --rm -p 8080:8080 --name hf-proxy-instance $(FULL_IMAGE_NAME)
+	docker run --rm -p 8080:8080 --name hf-proxy-instance $(IMAGE_NAME):latest
 
 dev: ## Run development server with hot reload
 	poetry run uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload
