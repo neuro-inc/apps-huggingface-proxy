@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Production-ready HuggingFace API proxy service"
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
+packages = [{include = "apolo_apps_hf_proxy", from = ".apolo/src"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
