@@ -40,6 +40,24 @@
       "x-title": "Secret",
       "x-type": "ApoloSecret"
     },
+    "DynamicAppIdResponse": {
+      "description": "Individual item in list response.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value"
+        }
+      },
+      "required": [
+        "id",
+        "value"
+      ],
+      "title": "DynamicAppIdResponse",
+      "type": "object"
+    },
     "HuggingFaceCache": {
       "properties": {
         "files_path": {
@@ -221,6 +239,25 @@
     "token": {
       "$ref": "#/$defs/HuggingFaceToken",
       "description": "HuggingFace API token"
+    },
+    "huggingface_models": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/DynamicAppIdResponse"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Huggingface Models",
+      "x-description": "List of available HuggingFace models.",
+      "x-is-advanced-field": false,
+      "x-meta-type": "dynamic",
+      "x-title": "HuggingFace Models"
     }
   },
   "required": [

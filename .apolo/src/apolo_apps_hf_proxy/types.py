@@ -1,8 +1,83 @@
 """Type definitions for HuggingFace Proxy App."""
 
-from apolo_app_types.protocols.common import AppInputs, AppOutputs
+import typing as t
+
+from apolo_app_types import DynamicAppIdResponse
+from apolo_app_types.protocols.common import AbstractAppFieldType, AppInputs, AppOutputs
 from apolo_app_types.protocols.common.hugging_face import HuggingFaceCache, HuggingFaceToken
-from pydantic import Field
+from apolo_app_types.protocols.common.schema_extra import SchemaExtraMetadata, SchemaMetaType
+from pydantic import ConfigDict, Field
+
+
+class HuggingFaceModel(AbstractAppFieldType):
+    """HuggingFace model/repository information."""
+
+    model_config = ConfigDict(
+        protected_namespaces=(),
+        json_schema_extra=SchemaExtraMetadata(
+            title="HuggingFace Model",
+            description="A HuggingFace model or repository.",
+            meta_type=SchemaMetaType.DYNAMIC,
+        ).as_json_schema_extra(),
+    )
+
+    repo_id: t.Annotated[
+        str,
+        Field(
+            json_schema_extra=SchemaExtraMetadata(
+                title="Repository ID",
+                description="The HuggingFace repository "
+                "identifier (e.g., 'meta-llama/Llama-2-7b').",
+            ).as_json_schema_extra()
+        ),
+    ]
+
+    visibility: t.Annotated[
+        str,
+        Field(
+            json_schema_extra=SchemaExtraMetadata(
+                title="Visibility",
+                description="Repository visibility (public or private).",
+            ).as_json_schema_extra()
+        ),
+    ]
+
+    gated: bool = Field(
+        default=False,
+        json_schema_extra=SchemaExtraMetadata(
+            title="Gated",
+            description="Whether the model requires access approval.",
+        ).as_json_schema_extra(),
+    )
+
+    tags: list[str] = Field(
+        default_factory=list,
+        json_schema_extra=SchemaExtraMetadata(
+            title="Tags",
+            description="Tags associated with the model.",
+        ).as_json_schema_extra(),
+    )
+
+    cached: bool = Field(
+        default=False,
+        json_schema_extra=SchemaExtraMetadata(
+            title="Cached",
+            description="Whether the model is cached locally.",
+        ).as_json_schema_extra(),
+    )
+
+    last_modified: (
+        t.Annotated[
+            str,
+            Field(
+                json_schema_extra=SchemaExtraMetadata(
+                    title="Last Modified",
+                    description="Timestamp when the model was last modified.",
+                ).as_json_schema_extra()
+            ),
+        ]
+        | None
+    ) = None
 
 
 class HfProxyInputs(AppInputs):
@@ -30,4 +105,13 @@ class HfProxyOutputs(AppOutputs):
     token: HuggingFaceToken = Field(
         ...,
         description="HuggingFace API token",
+    )
+
+    huggingface_models: list[DynamicAppIdResponse] | None = Field(
+        default=None,
+        json_schema_extra=SchemaExtraMetadata(
+            title="HuggingFace Models",
+            description="List of available HuggingFace models.",
+            meta_type=SchemaMetaType.DYNAMIC,
+        ).as_json_schema_extra(),
     )
