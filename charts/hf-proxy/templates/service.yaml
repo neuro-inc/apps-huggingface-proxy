@@ -4,7 +4,7 @@ metadata:
   name: {{ include "hf-proxy-app.fullname" . }}
   labels:
     {{- include "hf-proxy-app.labels" . | nindent 4 }}
-    output-server: true
+    "output-server": "true"
 spec:
   type: {{ .Values.service.type }}
   ports:
