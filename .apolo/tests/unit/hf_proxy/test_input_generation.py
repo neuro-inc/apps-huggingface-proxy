@@ -119,7 +119,9 @@ async def test_hf_proxy_storage_injection_annotations(
 
     # Assert storage mount configuration
     mount = storage_config[0]
-    assert mount["storage_uri"] == "storage:.apps/hugging-face-cache"
+    # Helper function expands relative paths to full storage URIs
+    assert mount["storage_uri"].endswith(".apps/hugging-face-cache")
+    assert mount["storage_uri"].startswith("storage://")
     assert mount["mount_path"] == "/root/.cache/huggingface"
     assert mount["mount_mode"] == "rw"
 

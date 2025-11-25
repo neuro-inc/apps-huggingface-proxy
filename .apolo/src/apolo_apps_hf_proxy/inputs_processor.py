@@ -1,11 +1,20 @@
 """Input processor for HuggingFace Proxy App."""
 
-import json
 import logging
 import typing as t
 
 from apolo_app_types.helm.apps.base import BaseChartValueProcessor
-from apolo_app_types.helm.apps.common import get_component_values
+from apolo_app_types.helm.apps.common import (
+    append_apolo_storage_integration_annotations,
+    gen_apolo_storage_integration_labels,
+    get_component_values,
+)
+from apolo_app_types.protocols.common import (
+    ApoloFilesMount,
+    ApoloMountMode,
+    MountPath,
+)
+from apolo_app_types.protocols.common.storage import ApoloMountModes
 
 from .types import HfProxyInputs
 
@@ -108,27 +117,22 @@ class HfProxyChartValueProcessor(BaseChartValueProcessor[HfProxyInputs]):
         # Get component values (resources, labels, tolerations, affinity)
         component_vals = await get_component_values(preset, preset_name)
 
-        # Get storage URI from cache config
-        storage_uri = inputs.cache_config.files_path.path
+        # Storage injection configuration using proper helper functions
+        storage_mount = ApoloFilesMount(
+            storage_uri=inputs.cache_config.files_path,
+            mount_path=MountPath(path="/root/.cache/huggingface"),
+            mode=ApoloMountMode(mode=ApoloMountModes.RW),
+        )
 
-        # Storage injection configuration
-        storage_config = [
-            {
-                "storage_uri": storage_uri,
-                "mount_path": "/root/.cache/huggingface",
-                "mount_mode": "rw",  # Read-write for caching
-            }
-        ]
+        # Pod annotations for storage injection (using helper to get proper format)
+        pod_annotations = append_apolo_storage_integration_annotations(
+            {}, [storage_mount], self.client
+        )
 
-        # Pod annotations for storage injection
-        pod_annotations = {
-            "platform.apolo.us/inject-storage": json.dumps(storage_config),
-        }
-
-        # Pod labels for storage injection (merge with component labels)
+        # Pod labels for storage injection (merge with component labels + org/project)
         pod_labels = {
             **component_vals["labels"],  # Component and preset labels
-            "platform.apolo.us/inject-storage": "true",
+            **gen_apolo_storage_integration_labels(client=self.client, inject_storage=True),
             "application": "hf-proxy",
         }
 
