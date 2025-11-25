@@ -65,14 +65,17 @@ async def test_hf_proxy_basic_values_generation(setup_clients, app_instance_id, 
     assert values["service"]["type"] == "ClusterIP"
     assert values["service"]["port"] == 8080
 
-    # Assert - HF token secret
-    assert values["hf_token_secret"]["name"] == "hf-token"
-    assert values["hf_token_secret"]["key"] == "HF_TOKEN"
-
     # Assert - Environment variables
     assert values["env"]["HF_TIMEOUT"] == "30"
     assert values["env"]["HF_CACHE_DIR"] == "/root/.cache/huggingface"
     assert values["env"]["PORT"] == "8080"
+
+    # Assert - HF token is serialized as secretKeyRef
+    assert "HF_TOKEN" in values["env"]
+    hf_token_env = values["env"]["HF_TOKEN"]
+    assert "valueFrom" in hf_token_env
+    assert "secretKeyRef" in hf_token_env["valueFrom"]
+    assert hf_token_env["valueFrom"]["secretKeyRef"]["key"] == "HF_TOKEN"
 
     # Assert - Apolo app ID
     assert values["apolo_app_id"] == app_instance_id

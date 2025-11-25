@@ -14,6 +14,7 @@ from apolo_app_types.protocols.common import (
     ApoloMountMode,
     MountPath,
 )
+from apolo_app_types.protocols.common.secrets_ import serialize_optional_secret
 from apolo_app_types.protocols.common.storage import ApoloMountModes
 
 from .types import HfProxyInputs
@@ -136,11 +137,12 @@ class HfProxyChartValueProcessor(BaseChartValueProcessor[HfProxyInputs]):
             "application": "hf-proxy",
         }
 
-        # Environment variables
+        # Environment variables with HF token from app secrets
         env_vars = {
             "HF_TIMEOUT": "30",
             "HF_CACHE_DIR": "/root/.cache/huggingface",
             "PORT": "8080",
+            "HF_TOKEN": serialize_optional_secret(inputs.token.token, secret_name=app_secrets_name),
         }
 
         # Build Helm values
@@ -174,12 +176,6 @@ class HfProxyChartValueProcessor(BaseChartValueProcessor[HfProxyInputs]):
             "volumeMounts": [],
             # Apolo app ID for platform integration
             "apolo_app_id": app_id,
-        }
-
-        # Create secret for HF token using the token key from ApoloSecret
-        values["hf_token_secret"] = {
-            "name": inputs.token.token_name,
-            "key": inputs.token.token.key,
         }
 
         return values

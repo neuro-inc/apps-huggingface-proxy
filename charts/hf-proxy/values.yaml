@@ -5,25 +5,10 @@ image:
   pullPolicy: Always
   tag: "master"
 
-container:
-  env:
-    - name: HF_API_BASE_URL
-      value: "https://huggingface.co/api"
-    - name: HF_TIMEOUT
-      value: "30"
-    - name: LOG_LEVEL
-      value: "INFO"
-    - name: LOG_JSON
-      value: "true"
-    - name: PORT
-      value: "8080"
-    - name: HF_CACHE_DIR
-      value: "/root/.cache/huggingface"
-    - name: HF_TOKEN
-      valueFrom:
-        secretKeyRef:
-          name: hf-proxy-secret
-          key: hf-token
+env:
+  HF_API_BASE_URL: "https://huggingface.co/api"
+  LOG_LEVEL: "INFO"
+  LOG_JSON: "true"
 
 imagePullSecrets: []
 nameOverride: ""
