@@ -2,7 +2,6 @@
 
 import typing as t
 
-from apolo_app_types import DynamicAppIdResponse
 from apolo_app_types.protocols.common import AbstractAppFieldType, AppInputs, AppOutputs
 from apolo_app_types.protocols.common.hugging_face import HuggingFaceCache, HuggingFaceToken
 from apolo_app_types.protocols.common.schema_extra import SchemaExtraMetadata, SchemaMetaType
@@ -21,7 +20,7 @@ class HuggingFaceModel(AbstractAppFieldType):
         ).as_json_schema_extra(),
     )
 
-    repo_id: t.Annotated[
+    id: t.Annotated[
         str,
         Field(
             json_schema_extra=SchemaExtraMetadata(
@@ -107,7 +106,7 @@ class HfProxyOutputs(AppOutputs):
         description="HuggingFace API token",
     )
 
-    huggingface_models: list[DynamicAppIdResponse] | None = Field(
+    huggingface_models: list[HuggingFaceModel] | None = Field(
         default=None,
         json_schema_extra=SchemaExtraMetadata(
             title="HuggingFace Models",

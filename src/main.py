@@ -11,15 +11,13 @@ from typing import Annotated, Any
 from apolo_app_types import (
     DynamicAppBasicResponse,
     DynamicAppFilterParams,
-    DynamicAppIdResponse,
-    DynamicAppListResponse,
 )
 from fastapi import Depends, FastAPI
 
 from src.config import Config
 from src.dependencies import DepHFService
 from src.logging import setup_logging
-from src.models import HFModel, ModelResponse
+from src.models import HFModel, ModelListResponse, ModelResponse
 
 
 class App(FastAPI):
@@ -82,7 +80,7 @@ async def root() -> DynamicAppBasicResponse:
 async def list_outputs(
     filter_params: Annotated[DynamicAppFilterParams, Depends()],
     hf_service: DepHFService,
-) -> DynamicAppListResponse:
+) -> ModelListResponse:
     """List available models from HuggingFace."""
     try:
         # Parse cached_only from filter string
@@ -123,7 +121,7 @@ async def list_outputs(
             if isinstance(model, dict):
                 repo_id = model.get("id", model.get("modelId", ""))
                 hf_model = HFModel(
-                    repo_id=repo_id,
+                    id=repo_id,
                     visibility="private" if model.get("private") else "public",
                     gated=model.get("gated", False),
                     tags=model.get("tags", []),
@@ -135,14 +133,14 @@ async def list_outputs(
         if filter_params.limit:
             models = models[filter_params.offset : filter_params.offset + filter_params.limit]
 
-        return DynamicAppListResponse(
+        return ModelListResponse(
             status="success",
-            data=[DynamicAppIdResponse(id=model.repo_id, value=model) for model in models],
+            data=models,
         )
 
     except Exception as e:
         logger.error("Failed to fetch outputs", extra={"error": str(e)})
-        return DynamicAppListResponse(status="error", data=None)
+        return ModelListResponse(status="error", data=None)
 
 
 @app.get("/outputs/{repo_id:path}")
@@ -159,7 +157,7 @@ async def get_output_detail(
             model_repo_id = hf_response.get("id", hf_response.get("modelId", repo_id))
 
         model = HFModel(
-            repo_id=model_repo_id,
+            id=model_repo_id,
             visibility="private" if hf_response.get("private") else "public",
             gated=hf_response.get("gated", False),
             tags=hf_response.get("tags", []),

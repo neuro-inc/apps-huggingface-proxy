@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 class HFModel(BaseModel):
     """HuggingFace model representation."""
 
-    repo_id: str = Field(..., description="Repository identifier")
+    id: str = Field(..., description="Repository identifier")
     visibility: str = Field(..., description="Repository visibility")
     gated: bool = Field(False, description="Whether the model is gated")
     tags: list[str] = Field(default_factory=list, description="Repository tags")
@@ -19,3 +19,10 @@ class ModelResponse(BaseModel):
 
     status: str
     data: HFModel | None = None
+
+
+class ModelListResponse(BaseModel):
+    """Response for model list endpoints."""
+
+    status: str
+    data: list[HFModel] | None = None

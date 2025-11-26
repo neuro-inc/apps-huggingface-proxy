@@ -40,24 +40,6 @@
       "x-title": "Secret",
       "x-type": "ApoloSecret"
     },
-    "DynamicAppIdResponse": {
-      "description": "Individual item in list response.",
-      "properties": {
-        "id": {
-          "title": "Id",
-          "type": "string"
-        },
-        "value": {
-          "title": "Value"
-        }
-      },
-      "required": [
-        "id",
-        "value"
-      ],
-      "title": "DynamicAppIdResponse",
-      "type": "object"
-    },
     "HuggingFaceCache": {
       "properties": {
         "files_path": {
@@ -77,6 +59,83 @@
       "x-meta-type": "integration",
       "x-title": "Hugging Face Cache",
       "x-type": "HuggingFaceCache"
+    },
+    "HuggingFaceModel": {
+      "description": "HuggingFace model/repository information.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "x-description": "The HuggingFace repository identifier (e.g., 'meta-llama/Llama-2-7b').",
+          "x-is-advanced-field": false,
+          "x-meta-type": "inline",
+          "x-title": "Repository ID"
+        },
+        "visibility": {
+          "title": "Visibility",
+          "type": "string",
+          "x-description": "Repository visibility (public or private).",
+          "x-is-advanced-field": false,
+          "x-meta-type": "inline",
+          "x-title": "Visibility"
+        },
+        "gated": {
+          "default": false,
+          "title": "Gated",
+          "type": "boolean",
+          "x-description": "Whether the model requires access approval.",
+          "x-is-advanced-field": false,
+          "x-meta-type": "inline",
+          "x-title": "Gated"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array",
+          "x-description": "Tags associated with the model.",
+          "x-is-advanced-field": false,
+          "x-meta-type": "inline",
+          "x-title": "Tags"
+        },
+        "cached": {
+          "default": false,
+          "title": "Cached",
+          "type": "boolean",
+          "x-description": "Whether the model is cached locally.",
+          "x-is-advanced-field": false,
+          "x-meta-type": "inline",
+          "x-title": "Cached"
+        },
+        "last_modified": {
+          "anyOf": [
+            {
+              "type": "string",
+              "x-description": "Timestamp when the model was last modified.",
+              "x-is-advanced-field": false,
+              "x-meta-type": "inline",
+              "x-title": "Last Modified"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Modified"
+        }
+      },
+      "required": [
+        "id",
+        "visibility"
+      ],
+      "title": "HuggingFaceModel",
+      "type": "object",
+      "x-description": "A HuggingFace model or repository.",
+      "x-is-advanced-field": false,
+      "x-meta-type": "dynamic",
+      "x-title": "HuggingFace Model",
+      "x-type": "HuggingFaceModel"
     },
     "HuggingFaceToken": {
       "properties": {
@@ -244,7 +303,7 @@
       "anyOf": [
         {
           "items": {
-            "$ref": "#/$defs/DynamicAppIdResponse"
+            "$ref": "#/$defs/HuggingFaceModel"
           },
           "type": "array"
         },
