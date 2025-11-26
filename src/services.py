@@ -54,7 +54,7 @@ class HuggingFaceService:
                     "id": model.id,
                     "modelId": model.id,
                     "private": getattr(model, "private", False),
-                    "gated": getattr(model, "gated", False),
+                    "gated": getattr(model, "gated", False) in ("auto", "manual"),
                     "tags": model.tags or [],
                     "lastModified": model.lastModified.isoformat() if model.lastModified else None,
                 }
