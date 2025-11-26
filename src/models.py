@@ -25,4 +25,4 @@ class ModelListResponse(BaseModel):
     """Response for model list endpoints."""
 
     status: str
-    data: list[HFModel] | None = None
+    data: list[dict[str, HFModel]] | None = None

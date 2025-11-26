@@ -135,7 +135,7 @@ async def list_outputs(
 
         return ModelListResponse(
             status="success",
-            data=models,
+            data=[{model.id: model} for model in models],
         )
 
     except Exception as e:

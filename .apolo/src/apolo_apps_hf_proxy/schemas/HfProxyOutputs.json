@@ -300,11 +300,11 @@
       "description": "HuggingFace API token"
     },
     "huggingface_models": {
-      "items": {
+      "additionalProperties": {
         "$ref": "#/$defs/HuggingFaceModelDynamic"
       },
       "title": "Huggingface Models",
-      "type": "array",
+      "type": "object",
       "x-description": "List of available HuggingFace models.",
       "x-is-advanced-field": false,
       "x-meta-type": "dynamic",
