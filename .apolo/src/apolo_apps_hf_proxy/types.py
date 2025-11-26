@@ -8,7 +8,7 @@ from apolo_app_types.protocols.common.schema_extra import SchemaExtraMetadata, S
 from pydantic import ConfigDict, Field
 
 
-class HuggingFaceModel(AbstractAppFieldType):
+class HuggingFaceModelDynamic(AbstractAppFieldType):
     """HuggingFace model/repository information."""
 
     model_config = ConfigDict(
@@ -106,8 +106,8 @@ class HfProxyOutputs(AppOutputs):
         description="HuggingFace API token",
     )
 
-    huggingface_models: list[HuggingFaceModel] | None = Field(
-        default=None,
+    huggingface_models: list[HuggingFaceModelDynamic] = Field(
+        default_factory=list,
         json_schema_extra=SchemaExtraMetadata(
             title="HuggingFace Models",
             description="List of available HuggingFace models.",

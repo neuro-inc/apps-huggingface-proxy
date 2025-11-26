@@ -60,7 +60,7 @@
       "x-title": "Hugging Face Cache",
       "x-type": "HuggingFaceCache"
     },
-    "HuggingFaceModel": {
+    "HuggingFaceModelDynamic": {
       "description": "HuggingFace model/repository information.",
       "properties": {
         "id": {
@@ -129,13 +129,13 @@
         "id",
         "visibility"
       ],
-      "title": "HuggingFaceModel",
+      "title": "HuggingFaceModelDynamic",
       "type": "object",
       "x-description": "A HuggingFace model or repository.",
       "x-is-advanced-field": false,
       "x-meta-type": "dynamic",
       "x-title": "HuggingFace Model",
-      "x-type": "HuggingFaceModel"
+      "x-type": "HuggingFaceModelDynamic"
     },
     "HuggingFaceToken": {
       "properties": {
@@ -300,19 +300,11 @@
       "description": "HuggingFace API token"
     },
     "huggingface_models": {
-      "anyOf": [
-        {
-          "items": {
-            "$ref": "#/$defs/HuggingFaceModel"
-          },
-          "type": "array"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
+      "items": {
+        "$ref": "#/$defs/HuggingFaceModelDynamic"
+      },
       "title": "Huggingface Models",
+      "type": "array",
       "x-description": "List of available HuggingFace models.",
       "x-is-advanced-field": false,
       "x-meta-type": "dynamic",
