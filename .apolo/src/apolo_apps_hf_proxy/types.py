@@ -79,6 +79,26 @@ class HuggingFaceModelDynamic(AbstractAppFieldType):
     ) = None
 
 
+class HuggingFaceModelsDynamic(AbstractAppFieldType):
+    """Mapping of HuggingFace model IDs to their information."""
+
+    model_config = ConfigDict(
+        protected_namespaces=(),
+        json_schema_extra=SchemaExtraMetadata(
+            title="HuggingFace Models",
+            description="Mapping of HuggingFace model IDs to their information.",
+            meta_type=SchemaMetaType.DYNAMIC,
+        ).as_json_schema_extra(),
+    )
+    hf_models: list[HuggingFaceModelDynamic] = Field(
+        default_factory=list,
+        json_schema_extra=SchemaExtraMetadata(
+            title="HuggingFace Models List",
+            description="List of HuggingFace models.",
+        ).as_json_schema_extra(),
+    )
+
+
 class HfProxyInputs(AppInputs):
     """Input configuration for HuggingFace Proxy deployment."""
 
@@ -106,8 +126,8 @@ class HfProxyOutputs(AppOutputs):
         description="HuggingFace API token",
     )
 
-    huggingface_models: dict[str, HuggingFaceModelDynamic] = Field(
-        default_factory=dict,
+    huggingface_models: HuggingFaceModelsDynamic = Field(
+        default_factory=HuggingFaceModelsDynamic,
         json_schema_extra=SchemaExtraMetadata(
             title="HuggingFace Models",
             description="List of available HuggingFace models.",

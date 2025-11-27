@@ -21,8 +21,14 @@ class ModelResponse(BaseModel):
     data: HFModel | None = None
 
 
+class HFModelsData(BaseModel):
+    """Container for HuggingFace models list."""
+
+    hf_models: list[dict[str, HFModel]] = Field(default_factory=list)
+
+
 class ModelListResponse(BaseModel):
     """Response for model list endpoints."""
 
     status: str
-    data: list[dict[str, HFModel]] | None = None
+    data: HFModelsData | None = None
