@@ -16,7 +16,7 @@ httpx = "^0.28.0"
 python-json-logger = "^3.1.0"
 apolo-app-types = "25.11.4"
 aiofiles = "^25.1.0"
-huggingface-hub = "^1.1.4"
+huggingface-hub = "^1.1.6"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"
