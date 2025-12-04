@@ -137,29 +137,6 @@
       "x-title": "HuggingFace Model",
       "x-type": "HuggingFaceModelDynamic"
     },
-    "HuggingFaceModelsDynamic": {
-      "description": "Mapping of HuggingFace model IDs to their information.",
-      "properties": {
-        "hf_models": {
-          "items": {
-            "$ref": "#/$defs/HuggingFaceModelDynamic"
-          },
-          "title": "Hf Models",
-          "type": "array",
-          "x-description": "List of HuggingFace models.",
-          "x-is-advanced-field": false,
-          "x-meta-type": "inline",
-          "x-title": "HuggingFace Models List"
-        }
-      },
-      "title": "HuggingFaceModelsDynamic",
-      "type": "object",
-      "x-description": "Mapping of HuggingFace model IDs to their information.",
-      "x-is-advanced-field": false,
-      "x-meta-type": "dynamic",
-      "x-title": "HuggingFace Models",
-      "x-type": "HuggingFaceModelsDynamic"
-    },
     "HuggingFaceToken": {
       "properties": {
         "token_name": {
@@ -323,8 +300,15 @@
       "description": "HuggingFace API token"
     },
     "huggingface_models": {
-      "$ref": "#/$defs/HuggingFaceModelsDynamic",
-      "x-description": "List of available HuggingFace models."
+      "items": {
+        "$ref": "#/$defs/HuggingFaceModelDynamic"
+      },
+      "title": "Huggingface Models",
+      "type": "array",
+      "x-description": "List of available HuggingFace models.",
+      "x-is-advanced-field": false,
+      "x-meta-type": "dynamic",
+      "x-title": "HuggingFace Models"
     }
   },
   "required": [

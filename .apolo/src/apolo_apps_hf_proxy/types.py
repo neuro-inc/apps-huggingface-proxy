@@ -126,8 +126,8 @@ class HfProxyOutputs(AppOutputs):
         description="HuggingFace API token",
     )
 
-    huggingface_models: HuggingFaceModelsDynamic = Field(
-        default_factory=HuggingFaceModelsDynamic,
+    huggingface_models: list[HuggingFaceModelDynamic] = Field(
+        default_factory=list,
         json_schema_extra=SchemaExtraMetadata(
             title="HuggingFace Models",
             description="List of available HuggingFace models.",
