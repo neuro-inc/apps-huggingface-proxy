@@ -44,12 +44,6 @@ def patch_hf_service(mock_service):
     return mock_service
 
 
-def get_model_from_entry(entry: dict) -> tuple[str, dict]:
-    """Extract model id and data from a {model_id: model_data} entry."""
-    model_id = list(entry.keys())[0]
-    return model_id, entry[model_id]
-
-
 async def test_list_outputs(client: TestClient, mock_hf_search_response):
     """Test listing all outputs."""
     mock_service = create_mock_service(search_response=mock_hf_search_response)
@@ -61,12 +55,11 @@ async def test_list_outputs(client: TestClient, mock_hf_search_response):
     data = response.json()
     assert data["status"] == "success"
     assert "data" in data
-    assert isinstance(data["data"]["hf_models"], list)
-    assert len(data["data"]["hf_models"]) == 2
-    model_id, model = get_model_from_entry(data["data"]["hf_models"][0])
-    assert model_id == "meta-llama/Llama-3.1-8B-Instruct"
-    assert model["gated"] is True
-    assert model["cached"] is False
+    assert isinstance(data["data"], list)
+    assert len(data["data"]) == 2
+    assert data["data"][0]["id"] == "meta-llama/Llama-3.1-8B-Instruct"
+    assert data["data"][0]["gated"] is True
+    assert data["data"][0]["cached"] is False
 
     src.dependencies._hf_service = None
 
@@ -191,7 +184,7 @@ async def test_list_outputs_with_pagination(client: TestClient, mock_hf_search_r
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    assert len(data["data"]["hf_models"]) == 1
+    assert len(data["data"]) == 1
 
     src.dependencies._hf_service = None
 
@@ -206,7 +199,7 @@ async def test_list_outputs_empty_response(client: TestClient):
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    assert data["data"]["hf_models"] == []
+    assert data["data"] == []
 
     src.dependencies._hf_service = None
 
@@ -227,7 +220,7 @@ async def test_list_outputs_malformed_model_data(client: TestClient):
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    assert len(data["data"]["hf_models"]) == 2
+    assert len(data["data"]) == 2
 
     src.dependencies._hf_service = None
 
@@ -246,11 +239,10 @@ async def test_list_outputs_with_missing_fields(client: TestClient):
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    assert len(data["data"]["hf_models"]) == 2
-    _, model = get_model_from_entry(data["data"]["hf_models"][0])
-    assert model["visibility"] == "public"
-    assert model["gated"] is False
-    assert model["tags"] == []
+    assert len(data["data"]) == 2
+    assert data["data"][0]["visibility"] == "public"
+    assert data["data"][0]["gated"] is False
+    assert data["data"][0]["tags"] == []
 
     src.dependencies._hf_service = None
 
@@ -285,7 +277,7 @@ async def test_list_outputs_filter_case_insensitive(client: TestClient, mock_hf_
     data = response.json()
     assert data["status"] == "success"
     # Without filtering logic, all models are returned
-    assert len(data["data"]["hf_models"]) == 2
+    assert len(data["data"]) == 2
 
     src.dependencies._hf_service = None
 
@@ -301,7 +293,7 @@ async def test_list_outputs_filter_by_tag(client: TestClient, mock_hf_search_res
     data = response.json()
     assert data["status"] == "success"
     # Without filtering logic, all models are returned
-    assert len(data["data"]["hf_models"]) == 2
+    assert len(data["data"]) == 2
 
     src.dependencies._hf_service = None
 
@@ -317,7 +309,7 @@ async def test_list_outputs_filter_no_matches(client: TestClient, mock_hf_search
     data = response.json()
     assert data["status"] == "success"
     # Without filtering logic, all models are returned
-    assert len(data["data"]["hf_models"]) == 2
+    assert len(data["data"]) == 2
 
     src.dependencies._hf_service = None
 
@@ -335,10 +327,8 @@ async def test_cached_models_in_list(client: TestClient, mock_hf_search_response
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    _, model0 = get_model_from_entry(data["data"]["hf_models"][0])
-    _, model1 = get_model_from_entry(data["data"]["hf_models"][1])
-    assert model0["cached"] is True
-    assert model1["cached"] is False
+    assert data["data"][0]["cached"] is True
+    assert data["data"][1]["cached"] is False
 
     src.dependencies._hf_service = None
 
@@ -373,11 +363,9 @@ async def test_list_outputs_cached_only(client: TestClient):
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    assert len(data["data"]["hf_models"]) == 2
-    _, model0 = get_model_from_entry(data["data"]["hf_models"][0])
-    _, model1 = get_model_from_entry(data["data"]["hf_models"][1])
-    assert model0["cached"] is True
-    assert model1["cached"] is True
+    assert len(data["data"]) == 2
+    assert data["data"][0]["cached"] is True
+    assert data["data"][1]["cached"] is True
 
     # Verify search_models was NOT called (since we're only getting cached models)
     mock_service.search_models.assert_not_called()
