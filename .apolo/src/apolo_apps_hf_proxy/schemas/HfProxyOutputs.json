@@ -128,31 +128,6 @@
       "x-title": "HuggingFace Model Detail",
       "x-type": "HuggingFaceModelDetailDynamic"
     },
-    "HuggingFaceModelDynamic": {
-      "description": "HuggingFace model/repository information.",
-      "properties": {
-        "id": {
-          "title": "Id",
-          "type": "string"
-        },
-        "value": {
-          "$ref": "#/$defs/HuggingFaceModelDetailDynamic",
-          "x-description": "Detailed information about the model.",
-          "x-meta-type": "inline",
-          "x-title": "Model Details"
-        }
-      },
-      "required": [
-        "id",
-        "value"
-      ],
-      "title": "HuggingFaceModelDynamic",
-      "type": "object",
-      "x-description": "A HuggingFace model or repository.",
-      "x-is-advanced-field": false,
-      "x-meta-type": "dynamic",
-      "x-title": "HuggingFace Model"
-    },
     "HuggingFaceToken": {
       "properties": {
         "token_name": {
@@ -317,7 +292,7 @@
     },
     "huggingface_models": {
       "items": {
-        "$ref": "#/$defs/HuggingFaceModelDynamic"
+        "$ref": "#/$defs/HuggingFaceModelDetailDynamic"
       },
       "title": "Huggingface Models",
       "type": "array",

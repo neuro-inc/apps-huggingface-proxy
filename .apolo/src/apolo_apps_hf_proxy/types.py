@@ -2,7 +2,6 @@
 
 import typing as t
 
-from apolo_app_types.dynamic_outputs import DynamicAppIdResponse
 from apolo_app_types.protocols.common import AbstractAppFieldType, AppInputs, AppOutputs
 from apolo_app_types.protocols.common.hugging_face import HuggingFaceCache, HuggingFaceToken
 from apolo_app_types.protocols.common.schema_extra import SchemaExtraMetadata, SchemaMetaType
@@ -69,49 +68,6 @@ class HuggingFaceModelDetailDynamic(AbstractAppFieldType):
     ) = None
 
 
-class HuggingFaceModelDynamic(DynamicAppIdResponse):
-    """HuggingFace model/repository information."""
-
-    model_config = ConfigDict(
-        protected_namespaces=(),
-        json_schema_extra=SchemaExtraMetadata(
-            title="HuggingFace Model",
-            description="A HuggingFace model or repository.",
-            meta_type=SchemaMetaType.DYNAMIC,
-        ).as_json_schema_extra(),
-    )
-
-    value: t.Annotated[
-        HuggingFaceModelDetailDynamic,
-        Field(
-            json_schema_extra=SchemaExtraMetadata(
-                title="Model Details",
-                description="Detailed information about the model.",
-            ).as_json_schema_extra()
-        ),
-    ]
-
-
-class HuggingFaceModelsDynamic(AbstractAppFieldType):
-    """Mapping of HuggingFace model IDs to their information."""
-
-    model_config = ConfigDict(
-        protected_namespaces=(),
-        json_schema_extra=SchemaExtraMetadata(
-            title="HuggingFace Models",
-            description="Mapping of HuggingFace model IDs to their information.",
-            meta_type=SchemaMetaType.DYNAMIC,
-        ).as_json_schema_extra(),
-    )
-    hf_models: list[HuggingFaceModelDynamic] = Field(
-        default_factory=list,
-        json_schema_extra=SchemaExtraMetadata(
-            title="HuggingFace Models List",
-            description="List of HuggingFace models.",
-        ).as_json_schema_extra(),
-    )
-
-
 class HfProxyInputs(AppInputs):
     """Input configuration for HuggingFace Proxy deployment."""
 
@@ -139,7 +95,7 @@ class HfProxyOutputs(AppOutputs):
         description="HuggingFace API token",
     )
 
-    huggingface_models: list[HuggingFaceModelDynamic] = Field(
+    huggingface_models: list[HuggingFaceModelDetailDynamic] = Field(
         default_factory=list,
         json_schema_extra=SchemaExtraMetadata(
             title="HuggingFace Models",
