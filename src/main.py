@@ -17,7 +17,7 @@ from fastapi import Depends, FastAPI
 from src.config import Config
 from src.dependencies import DepHFService
 from src.logging import setup_logging
-from src.models import HFModel, ModelListResponse, ModelResponse
+from src.models import HFModel, HFModelDetail, ModelListResponse, ModelResponse
 
 
 class App(FastAPI):
@@ -122,11 +122,13 @@ async def list_outputs(
                 repo_id = model.get("id", model.get("modelId", ""))
                 hf_model = HFModel(
                     id=repo_id,
-                    visibility="private" if model.get("private") else "public",
-                    gated=model.get("gated", False),
-                    tags=model.get("tags", []),
-                    cached=model.get("cached", False),
-                    last_modified=model.get("lastModified"),
+                    value=HFModelDetail(
+                        visibility="private" if model.get("private") else "public",
+                        gated=model.get("gated", False),
+                        tags=model.get("tags", []),
+                        cached=model.get("cached", False),
+                        last_modified=model.get("lastModified"),
+                    ),
                 )
                 models.append(hf_model)
 
@@ -158,11 +160,13 @@ async def get_output_detail(
 
         model = HFModel(
             id=model_repo_id,
-            visibility="private" if hf_response.get("private") else "public",
-            gated=hf_response.get("gated", False),
-            tags=hf_response.get("tags", []),
-            cached=hf_response.get("cached", False),
-            last_modified=hf_response.get("lastModified"),
+            value=HFModelDetail(
+                visibility="private" if hf_response.get("private") else "public",
+                gated=hf_response.get("gated", False),
+                tags=hf_response.get("tags", []),
+                cached=hf_response.get("cached", False),
+                last_modified=hf_response.get("lastModified"),
+            ),
         )
 
         return ModelResponse(status="success", data=model)

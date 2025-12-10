@@ -2,34 +2,24 @@
 
 import typing as t
 
+from apolo_app_types.dynamic_outputs import DynamicAppIdResponse
 from apolo_app_types.protocols.common import AbstractAppFieldType, AppInputs, AppOutputs
 from apolo_app_types.protocols.common.hugging_face import HuggingFaceCache, HuggingFaceToken
 from apolo_app_types.protocols.common.schema_extra import SchemaExtraMetadata, SchemaMetaType
 from pydantic import ConfigDict, Field
 
 
-class HuggingFaceModelDynamic(AbstractAppFieldType):
-    """HuggingFace model/repository information."""
+class HuggingFaceModelDetailDynamic(AbstractAppFieldType):
+    """Detailed HuggingFace model information."""
 
     model_config = ConfigDict(
         protected_namespaces=(),
         json_schema_extra=SchemaExtraMetadata(
-            title="HuggingFace Model",
-            description="A HuggingFace model or repository.",
+            title="HuggingFace Model Detail",
+            description="Detailed information about a HuggingFace model.",
             meta_type=SchemaMetaType.DYNAMIC,
         ).as_json_schema_extra(),
     )
-
-    id: t.Annotated[
-        str,
-        Field(
-            json_schema_extra=SchemaExtraMetadata(
-                title="Repository ID",
-                description="The HuggingFace repository "
-                "identifier (e.g., 'meta-llama/Llama-2-7b').",
-            ).as_json_schema_extra()
-        ),
-    ]
 
     visibility: t.Annotated[
         str,
@@ -77,6 +67,29 @@ class HuggingFaceModelDynamic(AbstractAppFieldType):
         ]
         | None
     ) = None
+
+
+class HuggingFaceModelDynamic(DynamicAppIdResponse):
+    """HuggingFace model/repository information."""
+
+    model_config = ConfigDict(
+        protected_namespaces=(),
+        json_schema_extra=SchemaExtraMetadata(
+            title="HuggingFace Model",
+            description="A HuggingFace model or repository.",
+            meta_type=SchemaMetaType.DYNAMIC,
+        ).as_json_schema_extra(),
+    )
+
+    value: t.Annotated[
+        HuggingFaceModelDetailDynamic,
+        Field(
+            json_schema_extra=SchemaExtraMetadata(
+                title="Model Details",
+                description="Detailed information about the model.",
+            ).as_json_schema_extra()
+        ),
+    ]
 
 
 class HuggingFaceModelsDynamic(AbstractAppFieldType):

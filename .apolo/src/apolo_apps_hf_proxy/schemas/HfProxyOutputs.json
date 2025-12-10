@@ -60,17 +60,9 @@
       "x-title": "Hugging Face Cache",
       "x-type": "HuggingFaceCache"
     },
-    "HuggingFaceModelDynamic": {
-      "description": "HuggingFace model/repository information.",
+    "HuggingFaceModelDetailDynamic": {
+      "description": "Detailed HuggingFace model information.",
       "properties": {
-        "id": {
-          "title": "Id",
-          "type": "string",
-          "x-description": "The HuggingFace repository identifier (e.g., 'meta-llama/Llama-2-7b').",
-          "x-is-advanced-field": false,
-          "x-meta-type": "inline",
-          "x-title": "Repository ID"
-        },
         "visibility": {
           "title": "Visibility",
           "type": "string",
@@ -126,16 +118,40 @@
         }
       },
       "required": [
-        "id",
         "visibility"
+      ],
+      "title": "HuggingFaceModelDetailDynamic",
+      "type": "object",
+      "x-description": "Detailed information about a HuggingFace model.",
+      "x-is-advanced-field": false,
+      "x-meta-type": "dynamic",
+      "x-title": "HuggingFace Model Detail",
+      "x-type": "HuggingFaceModelDetailDynamic"
+    },
+    "HuggingFaceModelDynamic": {
+      "description": "HuggingFace model/repository information.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/HuggingFaceModelDetailDynamic",
+          "x-description": "Detailed information about the model.",
+          "x-meta-type": "inline",
+          "x-title": "Model Details"
+        }
+      },
+      "required": [
+        "id",
+        "value"
       ],
       "title": "HuggingFaceModelDynamic",
       "type": "object",
       "x-description": "A HuggingFace model or repository.",
       "x-is-advanced-field": false,
       "x-meta-type": "dynamic",
-      "x-title": "HuggingFace Model",
-      "x-type": "HuggingFaceModelDynamic"
+      "x-title": "HuggingFace Model"
     },
     "HuggingFaceToken": {
       "properties": {
