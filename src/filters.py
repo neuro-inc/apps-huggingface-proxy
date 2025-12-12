@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 class FilterOperator(Enum):
     """Supported filter operators."""
 
-    EQ = "eq"  # Exact match (case-insensitive)
-    NE = "ne"  # Not equal (case-insensitive)
-    LIKE = "like"  # Contains (case-insensitive)
-    IN = "in"  # Value in list field
+    EQ = "eq"
+    NE = "ne"
+    LIKE = "like"
+    IN = "in"
 
 
 class FilterCondition(BaseModel):
