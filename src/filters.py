@@ -30,15 +30,11 @@ class FilterCondition(BaseModel):
 
 
 class HFApiFilters(BaseModel):
-    """Filters that can be passed to HuggingFace API.
+    """Filters that can be passed to HuggingFace API."""
 
-    These filters are propagated to the HF Hub API for server-side filtering,
-    improving performance by reducing data transfer.
-    """
-
-    search: str | None = None  # Maps to HF API 'search' param (substring match on repo names)
-    author: str | None = None  # Maps to HF API 'author' param (filter by org/author)
-    tags: list[str] = Field(default_factory=list)  # Maps to HF API 'filter' param
+    search: str | None = None
+    author: str | None = None
+    tags: list[str] = Field(default_factory=list)
 
 
 class ModelFilter:
@@ -218,17 +214,11 @@ class ModelFilter:
         api_filters = HFApiFilters()
 
         for condition in self.conditions:
-            # id:like or name:like → search parameter
             if condition.field in ("id", "name") and condition.operator == FilterOperator.LIKE:
-                # Only use first search term (HF API accepts single search string)
                 if api_filters.search is None:
                     api_filters.search = condition.value
-
-            # tags:in → filter parameter
             elif condition.field == "tags" and condition.operator == FilterOperator.IN:
                 api_filters.tags.append(condition.value)
-
-            # author:eq → author parameter
             elif condition.field == "author" and condition.operator == FilterOperator.EQ:
                 api_filters.author = condition.value
 
@@ -249,22 +239,15 @@ class ModelFilter:
         local_conditions = []
 
         for condition in self.conditions:
-            # These fields are not supported by HF API
             if condition.field in ("visibility", "gated", "cached"):
                 local_conditions.append(condition)
-
-            # EQ/NE on id/name need local filtering (HF API only has search/like)
             elif condition.field in ("id", "name") and condition.operator in (
                 FilterOperator.EQ,
                 FilterOperator.NE,
             ):
                 local_conditions.append(condition)
-
-            # NE on tags needs local filtering
             elif condition.field == "tags" and condition.operator != FilterOperator.IN:
                 local_conditions.append(condition)
-
-            # Author with non-EQ operator needs local filtering
             elif condition.field == "author" and condition.operator != FilterOperator.EQ:
                 local_conditions.append(condition)
 
