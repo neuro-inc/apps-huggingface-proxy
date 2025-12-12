@@ -203,3 +203,113 @@ async def test_get_cached_models_with_prefix():
     # Should only include models starting with "meta-llama"
     assert len(result) == 1
     assert result[0]["id"] == "meta-llama/test"
+
+
+async def test_search_models_with_search_filter():
+    """Test searching models with search filter passed to HF API."""
+    service = HuggingFaceService(token="test-token")
+
+    mock_model = MagicMock()
+    mock_model.id = "meta-llama/Llama-3"
+    mock_model.private = False
+    mock_model.gated = False
+    mock_model.tags = ["text-generation"]
+    mock_model.lastModified = None
+
+    with patch.object(service.api, "list_models", return_value=[mock_model]) as mock_list:
+        await service.search_models(limit=10, search="llama")
+
+    # Verify search was passed to the API
+    mock_list.assert_called_once()
+    call_kwargs = mock_list.call_args[1]
+    assert call_kwargs.get("search") == "llama"
+    assert call_kwargs.get("limit") == 10
+
+
+async def test_search_models_with_author_filter():
+    """Test searching models with author filter passed to HF API."""
+    service = HuggingFaceService(token="test-token")
+
+    mock_model = MagicMock()
+    mock_model.id = "meta-llama/Llama-3"
+    mock_model.private = False
+    mock_model.gated = False
+    mock_model.tags = []
+    mock_model.lastModified = None
+
+    with patch.object(service.api, "list_models", return_value=[mock_model]) as mock_list:
+        await service.search_models(limit=10, author="meta-llama")
+
+    # Verify author was passed to the API
+    mock_list.assert_called_once()
+    call_kwargs = mock_list.call_args[1]
+    assert call_kwargs.get("author") == "meta-llama"
+
+
+async def test_search_models_with_tags_filter():
+    """Test searching models with tags filter passed to HF API."""
+    service = HuggingFaceService(token="test-token")
+
+    mock_model = MagicMock()
+    mock_model.id = "test-model"
+    mock_model.private = False
+    mock_model.gated = False
+    mock_model.tags = ["text-generation"]
+    mock_model.lastModified = None
+
+    with patch.object(service.api, "list_models", return_value=[mock_model]) as mock_list:
+        await service.search_models(limit=10, tags=["text-generation"])
+
+    # Verify tags were passed as filter to the API
+    mock_list.assert_called_once()
+    call_kwargs = mock_list.call_args[1]
+    assert call_kwargs.get("filter") == ["text-generation"]
+
+
+async def test_search_models_with_combined_filters():
+    """Test searching models with multiple filters passed to HF API."""
+    service = HuggingFaceService(token="test-token")
+
+    mock_model = MagicMock()
+    mock_model.id = "meta-llama/Llama-3"
+    mock_model.private = False
+    mock_model.gated = False
+    mock_model.tags = ["text-generation"]
+    mock_model.lastModified = None
+
+    with patch.object(service.api, "list_models", return_value=[mock_model]) as mock_list:
+        await service.search_models(
+            limit=10, search="llama", author="meta-llama", tags=["text-generation"]
+        )
+
+    # Verify all filters were passed to the API
+    mock_list.assert_called_once()
+    call_kwargs = mock_list.call_args[1]
+    assert call_kwargs.get("search") == "llama"
+    assert call_kwargs.get("author") == "meta-llama"
+    assert call_kwargs.get("filter") == ["text-generation"]
+    assert call_kwargs.get("limit") == 10
+
+
+async def test_search_models_without_filters():
+    """Test searching models without filters doesn't pass extra params."""
+    service = HuggingFaceService(token="test-token")
+
+    mock_model = MagicMock()
+    mock_model.id = "test-model"
+    mock_model.private = False
+    mock_model.gated = False
+    mock_model.tags = []
+    mock_model.lastModified = None
+
+    with patch.object(service.api, "list_models", return_value=[mock_model]) as mock_list:
+        await service.search_models(limit=10)
+
+    # Verify only limit and full are passed
+    mock_list.assert_called_once()
+    call_kwargs = mock_list.call_args[1]
+    assert call_kwargs.get("limit") == 10
+    assert call_kwargs.get("full") is True
+    assert "search" not in call_kwargs
+    assert "author" not in call_kwargs
+    assert "filter" not in call_kwargs

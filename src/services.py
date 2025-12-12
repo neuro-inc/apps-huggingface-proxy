@@ -30,22 +30,42 @@ class HuggingFaceService:
         """Close is a no-op for HfApi but kept for compatibility."""
         pass
 
-    async def search_models(self, limit: int = 100) -> list[dict[str, Any]]:
+    async def search_models(
+        self,
+        limit: int = 100,
+        search: str | None = None,
+        author: str | None = None,
+        tags: list[str] | None = None,
+    ) -> list[dict[str, Any]]:
         """Search for models on HuggingFace Hub.
 
         Args:
             limit: Maximum number of models to return
+            search: Search string for substring match on repo names
+            author: Filter by model author/organization
+            tags: List of tags to filter by (e.g., ["text-generation"])
 
         Returns:
             List of model dictionaries
         """
         try:
-            logger.info("Searching HuggingFace models", extra={"limit": limit})
+            logger.info(
+                "Searching HuggingFace models",
+                extra={"limit": limit, "search": search, "author": author, "tags": tags},
+            )
+
+            # Build API call kwargs
+            api_kwargs: dict[str, Any] = {"limit": limit, "full": True}
+            if search:
+                api_kwargs["search"] = search
+            if author:
+                api_kwargs["author"] = author
+            if tags:
+                # HF API accepts filter as a list of tags
+                api_kwargs["filter"] = tags
 
             # Run the blocking API call in a thread pool
-            models_iter = await asyncio.to_thread(
-                partial(self.api.list_models, limit=limit, full=True)
-            )
+            models_iter = await asyncio.to_thread(partial(self.api.list_models, **api_kwargs))
 
             # Convert ModelInfo objects to dictionaries
             models = []

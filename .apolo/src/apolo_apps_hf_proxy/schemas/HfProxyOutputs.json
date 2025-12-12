@@ -63,6 +63,22 @@
     "HuggingFaceModelDetailDynamic": {
       "description": "Detailed HuggingFace model information.",
       "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "x-description": "The HuggingFace repository identifier.",
+          "x-is-advanced-field": false,
+          "x-meta-type": "inline",
+          "x-title": "Repository ID"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string",
+          "x-description": "The model name.",
+          "x-is-advanced-field": false,
+          "x-meta-type": "inline",
+          "x-title": "Model Name"
+        },
         "visibility": {
           "title": "Visibility",
           "type": "string",
@@ -118,6 +134,8 @@
         }
       },
       "required": [
+        "id",
+        "name",
         "visibility"
       ],
       "title": "HuggingFaceModelDetailDynamic",
