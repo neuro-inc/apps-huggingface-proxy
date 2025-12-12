@@ -373,3 +373,153 @@ async def test_list_outputs_cached_only(client: TestClient):
     mock_service.get_cached_models.assert_called_once()
 
     src.dependencies._hf_service = None
+
+
+async def test_list_outputs_with_name_like_filter_propagates_to_api(client: TestClient):
+    """Test that name:like filter is propagated to HF API as search parameter."""
+    mock_service = create_mock_service(search_response=[])
+    patch_hf_service(mock_service)
+
+    response = client.get("/outputs?filter=name:like:llama")
+
+    assert response.status_code == 200
+    # Verify search_models was called with search parameter
+    mock_service.search_models.assert_called_once()
+    call_kwargs = mock_service.search_models.call_args[1]
+    assert call_kwargs.get("search") == "llama"
+
+    src.dependencies._hf_service = None
+
+
+async def test_list_outputs_with_author_filter_propagates_to_api(client: TestClient):
+    """Test that author:eq filter is propagated to HF API as author parameter."""
+    mock_service = create_mock_service(search_response=[])
+    patch_hf_service(mock_service)
+
+    response = client.get("/outputs?filter=author:eq:meta-llama")
+
+    assert response.status_code == 200
+    # Verify search_models was called with author parameter
+    mock_service.search_models.assert_called_once()
+    call_kwargs = mock_service.search_models.call_args[1]
+    assert call_kwargs.get("author") == "meta-llama"
+
+    src.dependencies._hf_service = None
+
+
+async def test_list_outputs_with_tags_filter_propagates_to_api(client: TestClient):
+    """Test that tags:in filter is propagated to HF API as filter parameter."""
+    mock_service = create_mock_service(search_response=[])
+    patch_hf_service(mock_service)
+
+    response = client.get("/outputs?filter=tags:in:text-generation")
+
+    assert response.status_code == 200
+    # Verify search_models was called with tags parameter
+    mock_service.search_models.assert_called_once()
+    call_kwargs = mock_service.search_models.call_args[1]
+    assert call_kwargs.get("tags") == ["text-generation"]
+
+    src.dependencies._hf_service = None
+
+
+async def test_list_outputs_with_combined_api_and_local_filters(client: TestClient):
+    """Test mixed API and local filters work correctly together."""
+    # Models returned from API (after server-side filtering by name:like:llama)
+    search_response = [
+        {
+            "id": "meta-llama/Llama-3.1-8B-Instruct",
+            "modelId": "meta-llama/Llama-3.1-8B-Instruct",
+            "private": False,
+            "gated": True,
+            "tags": ["text-generation"],
+            "lastModified": "2024-01-15T10:00:00",
+        },
+        {
+            "id": "meta-llama/Llama-2-7B",
+            "modelId": "meta-llama/Llama-2-7B",
+            "private": False,
+            "gated": False,  # Not gated
+            "tags": ["text-generation"],
+            "lastModified": "2024-01-10T10:00:00",
+        },
+    ]
+    mock_service = create_mock_service(search_response=search_response)
+    patch_hf_service(mock_service)
+
+    # Filter: name:like:llama (API), gated:eq:true (local)
+    response = client.get("/outputs?filter=name:like:llama,gated:eq:true")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+
+    # API filter (name:like:llama) was propagated
+    call_kwargs = mock_service.search_models.call_args[1]
+    assert call_kwargs.get("search") == "llama"
+
+    # Local filter (gated:eq:true) was applied, so only gated model returned
+    assert len(data["data"]) == 1
+    assert data["data"][0]["id"] == "meta-llama/Llama-3.1-8B-Instruct"
+    assert data["data"][0]["value"]["gated"] is True
+
+    src.dependencies._hf_service = None
+
+
+async def test_list_outputs_with_multiple_tags_filter(client: TestClient):
+    """Test multiple tags:in filters are all propagated to HF API."""
+    mock_service = create_mock_service(search_response=[])
+    patch_hf_service(mock_service)
+
+    response = client.get("/outputs?filter=tags:in:text-generation,tags:in:pytorch")
+
+    assert response.status_code == 200
+    # Verify search_models was called with both tags
+    mock_service.search_models.assert_called_once()
+    call_kwargs = mock_service.search_models.call_args[1]
+    assert "text-generation" in call_kwargs.get("tags", [])
+    assert "pytorch" in call_kwargs.get("tags", [])
+
+    src.dependencies._hf_service = None
+
+
+async def test_list_outputs_local_only_filter_not_propagated(client: TestClient):
+    """Test that local-only filters (visibility, gated, cached) are not propagated to API."""
+    search_response = [
+        {
+            "id": "test-model-1",
+            "modelId": "test-model-1",
+            "private": False,
+            "gated": True,
+            "tags": [],
+            "lastModified": None,
+        },
+        {
+            "id": "test-model-2",
+            "modelId": "test-model-2",
+            "private": False,
+            "gated": False,
+            "tags": [],
+            "lastModified": None,
+        },
+    ]
+    mock_service = create_mock_service(search_response=search_response)
+    patch_hf_service(mock_service)
+
+    # visibility and gated are local-only filters
+    response = client.get("/outputs?filter=visibility:eq:public,gated:eq:false")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Verify no API filters were passed
+    call_kwargs = mock_service.search_models.call_args[1]
+    assert call_kwargs.get("search") is None
+    assert call_kwargs.get("author") is None
+    assert call_kwargs.get("tags") is None
+
+    # But local filtering was applied (only non-gated model)
+    assert len(data["data"]) == 1
+    assert data["data"][0]["value"]["gated"] is False
+
+    src.dependencies._hf_service = None

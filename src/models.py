@@ -7,6 +7,8 @@ from pydantic import BaseModel, Field
 class HFModelDetail(BaseModel):
     """Detailed HuggingFace model representation."""
 
+    id: str = Field(..., description="Repository identifier")
+    name: str = Field(..., description="Model name")
     visibility: str = Field(..., description="Repository visibility")
     gated: bool = Field(False, description="Whether the model is gated")
     tags: list[str] = Field(default_factory=list, description="Repository tags")
