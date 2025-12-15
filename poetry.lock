@@ -292,23 +292,23 @@ trio = ["trio (>=0.31.0)"]
 
 [[package]]
 name = "apolo-app-types"
-version = "25.11.4"
+version = "25.12.1"
 description = "Apolo Platform App Types."
 optional = false
 python-versions = "<4.0,>=3.9.0"
 groups = ["main"]
 files = [
-    {file = "apolo_app_types-25.11.4-py3-none-any.whl", hash = "sha256:38108f1661930daf5086156bf375709fbb17d53faa044c91474787c4076bb85a"},
-    {file = "apolo_app_types-25.11.4.tar.gz", hash = "sha256:1c256bfa78605e5e50594ec56765629d3d553bcf0c9c1db61fbefda8c0ce6842"},
+    {file = "apolo_app_types-25.12.1-py3-none-any.whl", hash = "sha256:5a70b5f1372cf098b997e50a262f52ddb3cc0539cdf4b47dc6d12820bf63bb26"},
+    {file = "apolo_app_types-25.12.1.tar.gz", hash = "sha256:f348635496fa26b1cd2035598ad1e213966282d017272d76b5a77056ba2c7831"},
 ]
 
 [package.dependencies]
-apolo-sdk = ">=25.11.0,<26.0.0"
+apolo-sdk = ">=25.11.1,<26.0.0"
 click = ">=8.0.3,<9.0.0"
 httpx = ">=0.28.0,<0.29.0"
 jsonref = ">=1.1.0,<2.0.0"
 kubernetes = ">=34.1.0,<35.0.0"
-pydantic = ">=2.12.4,<3.0.0"
+pydantic = ">=2.12.5,<3.0.0"
 pyyaml = ">=6.0.3,<7.0.0"
 tenacity = ">=9.1.2,<10.0.0"
 types-PyYAML = ">=6.0.12.20250915,<7.0.0.0"
@@ -1824,14 +1824,14 @@ files = [
 
 [[package]]
 name = "pydantic"
-version = "2.12.4"
+version = "2.12.5"
 description = "Data validation using Python type hints"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "pydantic-2.12.4-py3-none-any.whl", hash = "sha256:92d3d202a745d46f9be6df459ac5a064fdaa3c1c4cd8adcfa332ccf3c05f871e"},
-    {file = "pydantic-2.12.4.tar.gz", hash = "sha256:0f8cb9555000a4b5b617f66bfd2566264c4984b27589d3b845685983e8ea85ac"},
+    {file = "pydantic-2.12.5-py3-none-any.whl", hash = "sha256:e561593fccf61e8a20fc46dfc2dfe075b8be7d0188df33f221ad1f0139180f9d"},
+    {file = "pydantic-2.12.5.tar.gz", hash = "sha256:4d351024c75c0f085a9febbb665ce8c0c6ec5d30e903bdb6394b7ede26aebb49"},
 ]
 
 [package.dependencies]
@@ -3047,4 +3047,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "f19646420b9cd9b1ba73e1a060514308a697bbe5fc9b692a5c004e3c1b5f6133"
+content-hash = "d9727caeaf567595b45f91ce74f8a60409af06839793e63298c35f6eedec7d9a"

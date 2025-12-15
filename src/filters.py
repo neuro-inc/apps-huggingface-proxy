@@ -1,32 +1,27 @@
 """Filter module for HuggingFace model filtering."""
 
 import logging
-from enum import Enum
 from typing import TYPE_CHECKING, Any
 
+from apolo_app_types.dynamic_outputs import (
+    BaseModelFilter,
+    FilterCondition,
+    FilterOperator,
+    parse_filter_string,
+)
 from pydantic import BaseModel, Field
+
+__all__ = [
+    "FilterCondition",
+    "FilterOperator",
+    "HFApiFilters",
+    "ModelFilter",
+]
 
 if TYPE_CHECKING:
     from src.models import HFModel
 
 logger = logging.getLogger(__name__)
-
-
-class FilterOperator(Enum):
-    """Supported filter operators."""
-
-    EQ = "eq"
-    NE = "ne"
-    LIKE = "like"
-    IN = "in"
-
-
-class FilterCondition(BaseModel):
-    """A single filter condition."""
-
-    field: str
-    operator: FilterOperator
-    value: str
 
 
 class HFApiFilters(BaseModel):
@@ -37,14 +32,13 @@ class HFApiFilters(BaseModel):
     tags: list[str] = Field(default_factory=list)
 
 
-class ModelFilter:
+class ModelFilter(BaseModelFilter):
     """Filter for HuggingFace models.
 
-    Supports filtering by any field with various operators:
-    - eq: Exact match (case-insensitive)
-    - ne: Not equal (case-insensitive)
-    - like: Contains substring (case-insensitive)
-    - in: Value exists in list field
+    Extends BaseModelFilter with HF-specific features:
+    - cached_only: Special filter for cached models only
+    - API filter propagation: Extract filters that can be sent to HF Hub API
+    - Local filtering: Apply filters not supported by HF API
 
     Filter syntax: field:operator:value,field2:operator2:value2
 
@@ -75,102 +69,13 @@ class ModelFilter:
         Args:
             filter_string: Filter string to parse
         """
-        # Handle special filters
         if "cached_only" in filter_string.lower():
             self.cached_only = True
-            # Remove cached_only from string and continue parsing
             filter_string = filter_string.lower().replace("cached_only", "").strip(",")
             if not filter_string:
                 return
 
-        # Parse field:op:value format
-        for part in filter_string.split(","):
-            part = part.strip()
-            if not part:
-                continue
-
-            parts = part.split(":")
-            if len(parts) == 3:
-                field, op, value = parts
-                try:
-                    operator = FilterOperator(op.lower())
-                    self.conditions.append(
-                        FilterCondition(field=field.lower(), operator=operator, value=value)
-                    )
-                except ValueError:
-                    logger.warning(f"Unknown filter operator: {op}")
-            else:
-                logger.warning(f"Invalid filter format: {part}. Expected field:operator:value")
-
-    def apply(self, models: list["HFModel"]) -> list["HFModel"]:
-        """Apply all filter conditions to a list of models.
-
-        Args:
-            models: List of HFModel objects to filter
-
-        Returns:
-            Filtered list of models matching all conditions (AND logic)
-        """
-        if not self.conditions:
-            return models
-
-        result = models
-        for condition in self.conditions:
-            result = [m for m in result if self._matches(m, condition)]
-
-        logger.debug(
-            f"Filter applied: {len(models)} -> {len(result)} models",
-            extra={"conditions": len(self.conditions)},
-        )
-        return result
-
-    def _matches(self, model: "HFModel", condition: FilterCondition) -> bool:
-        """Check if a model matches a single filter condition.
-
-        Args:
-            model: HFModel to check
-            condition: Filter condition to apply
-
-        Returns:
-            True if model matches the condition
-        """
-        value = self._get_field_value(model, condition.field)
-
-        if value is None:
-            return condition.operator == FilterOperator.NE
-
-        match condition.operator:
-            case FilterOperator.EQ:
-                return self._compare_equal(value, condition.value)
-            case FilterOperator.NE:
-                return not self._compare_equal(value, condition.value)
-            case FilterOperator.LIKE:
-                return condition.value.lower() in str(value).lower()
-            case FilterOperator.IN:
-                if isinstance(value, list):
-                    return any(condition.value.lower() == v.lower() for v in value)
-                return False
-
-        return False
-
-    def _compare_equal(self, value: Any, filter_value: str) -> bool:
-        """Compare value for equality, handling different types.
-
-        Args:
-            value: Model field value
-            filter_value: Filter value (string)
-
-        Returns:
-            True if values are equal
-        """
-        if isinstance(value, bool):
-            return str(value).lower() == filter_value.lower()
-        if isinstance(value, int | float):
-            try:
-                return value == type(value)(filter_value)
-            except (ValueError, TypeError):
-                return False
-        return str(value).lower() == filter_value.lower()
+        self.conditions = parse_filter_string(filter_string)
 
     def _get_field_value(self, model: "HFModel", field: str) -> Any:
         """Get field value from model, checking both id and value attributes.
@@ -182,15 +87,27 @@ class ModelFilter:
         Returns:
             Field value or None if not found
         """
-        # Check top-level model fields first
         if field == "id":
             return model.id
 
-        # Check value (HFModelDetail) fields
         if hasattr(model, "value") and model.value is not None:
             return getattr(model.value, field, None)
 
         return None
+
+    def _matches_in_operator(self, value: Any, filter_value: str) -> bool:
+        """Handle IN operator for list fields.
+
+        Args:
+            value: Field value (expected to be a list)
+            filter_value: Value to search for in the list
+
+        Returns:
+            True if filter_value is found in value
+        """
+        if isinstance(value, list):
+            return any(filter_value.lower() == v.lower() for v in value)
+        return False
 
     def has_conditions(self) -> bool:
         """Check if filter has any conditions to apply.
