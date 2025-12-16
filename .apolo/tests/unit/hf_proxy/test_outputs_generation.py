@@ -38,7 +38,7 @@ async def test_hf_proxy_outputs(setup_clients, mock_kubernetes_client):
     )
 
     # Assert
-    assert res["cache_config"]["files_path"]["path"] == storage_uri
+    assert res["files_path"]["path"] == storage_uri
     assert res["token"]["token_name"] == "hf-token"
     assert res["token"]["token"]["key"] == "HF_TOKEN"
 
@@ -73,7 +73,7 @@ async def test_hf_proxy_outputs_custom_storage(setup_clients, mock_kubernetes_cl
     )
 
     # Assert
-    assert res["cache_config"]["files_path"]["path"] == custom_storage_uri
+    assert res["files_path"]["path"] == custom_storage_uri
     assert res["token"]["token_name"] == "custom-token"
     assert res["token"]["token"]["key"] == "CUSTOM_HF_TOKEN"
 
@@ -91,6 +91,6 @@ async def test_hf_proxy_outputs_with_defaults(setup_clients, mock_kubernetes_cli
     )
 
     # Assert - Should use default values
-    assert res["cache_config"]["files_path"]["path"] == "storage:.apps/hugging-face-cache"
+    assert res["files_path"]["path"] == "storage:.apps/hugging-face-cache"
     assert res["token"]["token_name"] == "hf-token"
     assert res["token"]["token"]["key"] == "HF_TOKEN"

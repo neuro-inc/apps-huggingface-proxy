@@ -40,26 +40,6 @@
       "x-title": "Secret",
       "x-type": "ApoloSecret"
     },
-    "HuggingFaceCache": {
-      "properties": {
-        "files_path": {
-          "$ref": "#/$defs/ApoloFilesPath",
-          "default": {
-            "path": "storage:.apps/hugging-face-cache",
-            "__type__": "ApoloFilesPath"
-          },
-          "x-description": "The path to the Apolo Files directory where Hugging Face artifacts are cached.",
-          "x-title": "Files Path"
-        }
-      },
-      "title": "HuggingFaceCache",
-      "type": "object",
-      "x-description": "Configuration for the Hugging Face cache.",
-      "x-is-advanced-field": false,
-      "x-meta-type": "integration",
-      "x-title": "Hugging Face Cache",
-      "x-type": "HuggingFaceCache"
-    },
     "HuggingFaceToken": {
       "properties": {
         "token_name": {
@@ -92,17 +72,20 @@
   },
   "description": "Input configuration for HuggingFace Proxy deployment.",
   "properties": {
-    "cache_config": {
-      "$ref": "#/$defs/HuggingFaceCache",
-      "description": "Configuration for the HuggingFace cache storage"
+    "files_path": {
+      "$ref": "#/$defs/ApoloFilesPath",
+      "default": {
+        "path": "storage:.apps/hugging-face-cache",
+        "__type__": "ApoloFilesPath"
+      },
+      "x-description": "The path to the Apolo Files directory where Hugging Face artifacts are cached.",
+      "x-title": "Files Path"
     },
     "token": {
-      "$ref": "#/$defs/HuggingFaceToken",
-      "description": "HuggingFace API token for authentication"
+      "$ref": "#/$defs/HuggingFaceToken"
     }
   },
   "required": [
-    "cache_config",
     "token"
   ],
   "title": "HfProxyInputs",

@@ -70,6 +70,20 @@ setup_logging(app.config)
 logger = logging.getLogger(__name__)
 
 
+def get_model_cache_path(repo_id: str, cache_dir: str) -> str:
+    """Build the cache path for a model.
+
+    Args:
+        repo_id: The model repository ID (e.g., "org/model-name")
+        cache_dir: The HuggingFace cache directory
+
+    Returns:
+        The full path to the model's cache directory
+    """
+    model_cache_name = f"models--{repo_id.replace('/', '--')}"
+    return f"{cache_dir}/hub/{model_cache_name}"
+
+
 @app.get("/")
 @app.get("/health")
 @app.get("/healthz")
@@ -113,31 +127,67 @@ async def list_outputs(
         api_filters = model_filter.get_api_filters()
         local_conditions = model_filter.get_local_conditions()
 
+        cache_dir = app.config.hf_cache_dir
+        hf_response: list[dict[str, Any]] = []
+        cached_model_ids: set[str] = set()
+
         async with hf_service:
             if model_filter.cached_only:
                 # Only return cached models without HF Hub API call
                 logger.info("Fetching cached models only, skipping HF Hub API")
                 hf_response = await hf_service.get_cached_models()
-            else:
-                # Search HF Hub and local cache in parallel
-                # Propagate supported filters to HF API for server-side filtering
-                hf_search_task = asyncio.create_task(
-                    hf_service.search_models(
-                        limit=filter_params.limit or 100,
-                        search=api_filters.search,
-                        author=api_filters.author,
-                        tags=api_filters.tags if api_filters.tags else None,
-                    )
-                )
-                local_search_task = asyncio.create_task(hf_service.search_cache())
-
-                hf_response, cached_models = await asyncio.gather(hf_search_task, local_search_task)
-
-                # Mark which models are cached
                 for model in hf_response:
                     if isinstance(model, dict):
+                        model["cached"] = True
+
+            elif not model_filter.has_conditions():
+                # No filters: return cached models first, only call HF API if no cache
+                logger.info("No filters applied, fetching cached models first")
+                hf_response = await hf_service.get_cached_models()
+
+                if hf_response:
+                    # We have cached models, mark them all as cached
+                    for model in hf_response:
+                        if isinstance(model, dict):
+                            model["cached"] = True
+                else:
+                    # No cached models, fall back to HF API
+                    logger.info("No cached models found, fetching from HF Hub API")
+                    hf_response = await hf_service.search_models(
+                        limit=filter_params.limit or 100,
+                    )
+                    for model in hf_response:
+                        if isinstance(model, dict):
+                            model["cached"] = False
+
+            else:
+                # Filters applied: search cache first, then add HF API results
+                logger.info("Filters applied, searching cache first then HF API")
+
+                # Get cached models first
+                cached_response = await hf_service.get_cached_models()
+                for model in cached_response:
+                    if isinstance(model, dict):
                         repo_id = model.get("id", model.get("modelId", ""))
-                        model["cached"] = repo_id in cached_models
+                        model["cached"] = True
+                        cached_model_ids.add(repo_id)
+                        hf_response.append(model)
+
+                # Then search HF API with filters
+                hf_api_response = await hf_service.search_models(
+                    limit=filter_params.limit or 100,
+                    search=api_filters.search,
+                    author=api_filters.author,
+                    tags=api_filters.tags if api_filters.tags else None,
+                )
+
+                # Add HF API results that aren't already in cache
+                for model in hf_api_response:
+                    if isinstance(model, dict):
+                        repo_id = model.get("id", model.get("modelId", ""))
+                        if repo_id not in cached_model_ids:
+                            model["cached"] = False
+                            hf_response.append(model)
 
         # Convert to HFModel objects
         models = []
@@ -146,6 +196,9 @@ async def list_outputs(
                 repo_id = model.get("id", model.get("modelId", ""))
                 # Extract model name from repo_id (e.g., "org/model-name" -> "model-name")
                 model_name = repo_id.split("/")[-1] if "/" in repo_id else repo_id
+                is_cached = model.get("cached", False)
+                # Build files_path for cached models
+                files_path = get_model_cache_path(repo_id, cache_dir) if is_cached else None
                 hf_model = HFModel(
                     id=repo_id,
                     value=HFModelDetail(
@@ -154,8 +207,9 @@ async def list_outputs(
                         visibility="private" if model.get("private") else "public",
                         gated=model.get("gated", False),
                         tags=model.get("tags", []),
-                        cached=model.get("cached", False),
+                        cached=is_cached,
                         last_modified=model.get("lastModified"),
+                        files_path=files_path,
                     ),
                 )
                 models.append(hf_model)
@@ -192,6 +246,11 @@ async def get_output_detail(
 
         # Extract model name from repo_id (e.g., "org/model-name" -> "model-name")
         model_name = model_repo_id.split("/")[-1] if "/" in model_repo_id else model_repo_id
+        is_cached = hf_response.get("cached", False)
+        # Build files_path for cached models
+        files_path = (
+            get_model_cache_path(model_repo_id, app.config.hf_cache_dir) if is_cached else None
+        )
         model = HFModel(
             id=model_repo_id,
             value=HFModelDetail(
@@ -200,8 +259,9 @@ async def get_output_detail(
                 visibility="private" if hf_response.get("private") else "public",
                 gated=hf_response.get("gated", False),
                 tags=hf_response.get("tags", []),
-                cached=hf_response.get("cached", False),
+                cached=is_cached,
                 last_modified=hf_response.get("lastModified"),
+                files_path=files_path,
             ),
         )
 

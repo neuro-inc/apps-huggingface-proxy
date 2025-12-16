@@ -3,8 +3,9 @@
 import typing as t
 
 from apolo_app_types.protocols.common import AbstractAppFieldType, AppInputs, AppOutputs
-from apolo_app_types.protocols.common.hugging_face import HuggingFaceCache, HuggingFaceToken
+from apolo_app_types.protocols.common.hugging_face import HuggingFaceToken
 from apolo_app_types.protocols.common.schema_extra import SchemaExtraMetadata, SchemaMetaType
+from apolo_app_types.protocols.common.storage import ApoloFilesPath
 from pydantic import ConfigDict, Field
 
 
@@ -87,33 +88,40 @@ class HuggingFaceModelDetailDynamic(AbstractAppFieldType):
         | None
     ) = None
 
+    files_path: (
+        t.Annotated[
+            ApoloFilesPath,
+            Field(
+                json_schema_extra=SchemaExtraMetadata(
+                    title="Files Path",
+                    description="Path to the cached model files in Apolo storage.",
+                ).as_json_schema_extra()
+            ),
+        ]
+        | None
+    ) = None
+
 
 class HfProxyInputs(AppInputs):
     """Input configuration for HuggingFace Proxy deployment."""
 
-    cache_config: HuggingFaceCache = Field(
-        ...,
-        description="Configuration for the HuggingFace cache storage",
+    files_path: ApoloFilesPath = Field(
+        default=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
+        json_schema_extra=SchemaExtraMetadata(
+            description="The path to the Apolo Files directory where Hugging Face artifacts are cached.",  # noqa: E501
+            title="Files Path",
+        ).as_json_schema_extra(),
     )
 
-    token: HuggingFaceToken = Field(
-        ...,
-        description="HuggingFace API token for authentication",
-    )
+    token: HuggingFaceToken
 
 
 class HfProxyOutputs(AppOutputs):
     """Output information from HuggingFace Proxy deployment."""
 
-    cache_config: HuggingFaceCache = Field(
-        ...,
-        description="Configuration for the HuggingFace cache storage",
-    )
+    files_path: ApoloFilesPath
 
-    token: HuggingFaceToken = Field(
-        ...,
-        description="HuggingFace API token",
-    )
+    token: HuggingFaceToken
 
     huggingface_models: list[HuggingFaceModelDetailDynamic] = Field(
         default_factory=list,

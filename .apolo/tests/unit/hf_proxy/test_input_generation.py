@@ -4,7 +4,7 @@ import json
 from unittest.mock import AsyncMock
 
 import pytest
-from apolo_app_types.protocols.common.hugging_face import HuggingFaceCache, HuggingFaceToken
+from apolo_app_types.protocols.common.hugging_face import HuggingFaceToken
 from apolo_app_types.protocols.common.secrets_ import ApoloSecret
 from apolo_app_types.protocols.common.storage import ApoloFilesPath
 from apolo_apps_hf_proxy.inputs_processor import HfProxyChartValueProcessor
@@ -15,9 +15,7 @@ async def test_hf_proxy_basic_values_generation(setup_clients, app_instance_id, 
     """Test basic Helm values generation from user inputs."""
     # Arrange
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(
-            files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache")
-        ),
+        files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
@@ -88,9 +86,7 @@ async def test_hf_proxy_storage_injection_annotations(
     """Test that storage injection annotations are correctly set."""
     # Arrange
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(
-            files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache")
-        ),
+        files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
@@ -135,7 +131,7 @@ async def test_hf_proxy_custom_storage_uri(setup_clients, app_instance_id, mock_
     # Arrange
     custom_storage_uri = "storage://default/org/project/custom-hf-cache"
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(files_path=ApoloFilesPath(path=custom_storage_uri)),
+        files_path=ApoloFilesPath(path=custom_storage_uri),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
@@ -164,9 +160,7 @@ async def test_hf_proxy_preset_selection_cheapest(
     """Test that preset auto-selection chooses the cheapest viable preset."""
     # Arrange
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(
-            files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache")
-        ),
+        files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
@@ -196,9 +190,7 @@ async def test_hf_proxy_preset_filters_gpu(setup_clients, app_instance_id, mock_
     }
 
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(
-            files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache")
-        ),
+        files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
@@ -228,9 +220,7 @@ async def test_hf_proxy_preset_filters_no_capacity(
     mock_apolo_client.jobs.get_capacity = AsyncMock(side_effect=mock_get_capacity_zero)
 
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(
-            files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache")
-        ),
+        files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
@@ -258,9 +248,7 @@ async def test_hf_proxy_preset_filters_insufficient_resources(
     }
 
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(
-            files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache")
-        ),
+        files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
@@ -295,9 +283,7 @@ async def test_hf_proxy_preset_prefers_higher_capacity_when_equal_cost(
     # With same cost, should still prefer cpu-small (more capacity: 5 > 3)
 
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(
-            files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache")
-        ),
+        files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
