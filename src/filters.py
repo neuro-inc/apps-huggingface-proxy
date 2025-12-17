@@ -39,10 +39,13 @@ class ModelFilter(BaseModelFilter):
     - cached_only: Special filter for cached models only
     - API filter propagation: Extract filters that can be sent to HF Hub API
     - Local filtering: Apply filters not supported by HF API
+    - Shorthand syntax: Simple string without colons = name:like:value
 
     Filter syntax: field:operator:value,field2:operator2:value2
 
     Examples:
+        - llama → name:like:llama
+        - meta-llama → name:like:meta-llama
         - visibility:eq:public
         - name:like:llama
         - gated:eq:true,cached:eq:true
@@ -66,6 +69,9 @@ class ModelFilter(BaseModelFilter):
     def _parse(self, filter_string: str) -> None:
         """Parse filter string into conditions.
 
+        Supports shorthand syntax:
+        - Simple string without colons (e.g., "llama") → name:like:llama
+
         Args:
             filter_string: Filter string to parse
         """
@@ -74,6 +80,9 @@ class ModelFilter(BaseModelFilter):
             filter_string = filter_string.lower().replace("cached_only", "").strip(",")
             if not filter_string:
                 return
+
+        if ":" not in filter_string:
+            filter_string = f"name:like:{filter_string}"
 
         self.conditions = parse_filter_string(filter_string)
 
