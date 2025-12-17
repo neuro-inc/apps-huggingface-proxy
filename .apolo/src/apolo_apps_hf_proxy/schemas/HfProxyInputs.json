@@ -7,6 +7,7 @@
           "type": "string",
           "x-description": "Provide the Apolo Storage path starting with `storage:` to locate your files.",
           "x-is-advanced-field": false,
+          "x-is-configurable": true,
           "x-meta-type": "inline",
           "x-title": "Storage Path"
         }
@@ -18,6 +19,7 @@
       "type": "object",
       "x-description": "Specify the path within the Apolo Files application to read from or write to.",
       "x-is-advanced-field": false,
+      "x-is-configurable": true,
       "x-meta-type": "inline",
       "x-title": "Apolo Files Path",
       "x-type": "ApoloFilesFile"
@@ -36,6 +38,7 @@
       "type": "object",
       "x-description": "Apolo Secret Configuration.",
       "x-is-advanced-field": false,
+      "x-is-configurable": true,
       "x-meta-type": "inline",
       "x-title": "Secret",
       "x-type": "ApoloSecret"
@@ -48,6 +51,7 @@
           "type": "string",
           "x-description": "The name of the Hugging Face token.",
           "x-is-advanced-field": false,
+          "x-is-configurable": true,
           "x-meta-type": "inline",
           "x-title": "Token Name"
         },
@@ -65,6 +69,7 @@
       "type": "object",
       "x-description": "Provide a Hugging Face API token linked to an account with access to the model specified above. This token will be used to download model files from the Hugging Face Hub, including gated or private repositories where applicable.",
       "x-is-advanced-field": false,
+      "x-is-configurable": true,
       "x-meta-type": "integration",
       "x-title": "Hugging Face Token",
       "x-type": "HuggingFaceToken"
