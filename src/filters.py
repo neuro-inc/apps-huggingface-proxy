@@ -44,8 +44,8 @@ class ModelFilter(BaseModelFilter):
     Filter syntax: field:operator:value,field2:operator2:value2
 
     Examples:
-        - llama → name:like:llama (shorthand)
-        - meta-llama → name:like:meta-llama (shorthand)
+        - llama → name:like:llama
+        - meta-llama → name:like:meta-llama
         - visibility:eq:public
         - name:like:llama
         - gated:eq:true,cached:eq:true
@@ -81,7 +81,6 @@ class ModelFilter(BaseModelFilter):
             if not filter_string:
                 return
 
-        # Simple string without colons = name prefix search
         if ":" not in filter_string:
             filter_string = f"name:like:{filter_string}"
 
