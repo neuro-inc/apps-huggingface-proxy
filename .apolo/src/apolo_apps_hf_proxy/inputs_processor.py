@@ -120,7 +120,7 @@ class HfProxyChartValueProcessor(BaseChartValueProcessor[HfProxyInputs]):
 
         # Storage injection configuration using proper helper functions
         storage_mount = ApoloFilesMount(
-            storage_uri=inputs.cache_config.files_path,
+            storage_uri=inputs.files_path,
             mount_path=MountPath(path="/root/.cache/huggingface"),
             mode=ApoloMountMode(mode=ApoloMountModes.RW),
         )

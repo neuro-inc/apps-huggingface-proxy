@@ -14,6 +14,7 @@ class HFModelDetail(BaseModel):
     tags: list[str] = Field(default_factory=list, description="Repository tags")
     cached: bool = Field(False, description="Whether model is cached locally")
     last_modified: str | None = Field(None, description="Last modification timestamp")
+    files_path: str | None = Field(None, description="Path to cached model files")
 
 
 class HFModel(DynamicAppIdResponse):

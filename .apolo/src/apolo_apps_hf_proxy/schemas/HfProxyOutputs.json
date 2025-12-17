@@ -40,26 +40,6 @@
       "x-title": "Secret",
       "x-type": "ApoloSecret"
     },
-    "HuggingFaceCache": {
-      "properties": {
-        "files_path": {
-          "$ref": "#/$defs/ApoloFilesPath",
-          "default": {
-            "path": "storage:.apps/hugging-face-cache",
-            "__type__": "ApoloFilesPath"
-          },
-          "x-description": "The path to the Apolo Files directory where Hugging Face artifacts are cached.",
-          "x-title": "Files Path"
-        }
-      },
-      "title": "HuggingFaceCache",
-      "type": "object",
-      "x-description": "Configuration for the Hugging Face cache.",
-      "x-is-advanced-field": false,
-      "x-meta-type": "integration",
-      "x-title": "Hugging Face Cache",
-      "x-type": "HuggingFaceCache"
-    },
     "HuggingFaceModelDetailDynamic": {
       "description": "Detailed HuggingFace model information.",
       "properties": {
@@ -131,6 +111,21 @@
           ],
           "default": null,
           "title": "Last Modified"
+        },
+        "files_path": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ApoloFilesPath",
+              "x-description": "Path to the cached model files in Apolo storage.",
+              "x-is-advanced-field": false,
+              "x-meta-type": "inline",
+              "x-title": "Files Path"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -300,13 +295,11 @@
       "description": "The main application URL for accessing the service. This is the primary endpoint users should use to access the application.",
       "title": "Application URL"
     },
-    "cache_config": {
-      "$ref": "#/$defs/HuggingFaceCache",
-      "description": "Configuration for the HuggingFace cache storage"
+    "files_path": {
+      "$ref": "#/$defs/ApoloFilesPath"
     },
     "token": {
-      "$ref": "#/$defs/HuggingFaceToken",
-      "description": "HuggingFace API token"
+      "$ref": "#/$defs/HuggingFaceToken"
     },
     "huggingface_models": {
       "items": {
@@ -321,7 +314,7 @@
     }
   },
   "required": [
-    "cache_config",
+    "files_path",
     "token"
   ],
   "title": "HfProxyOutputs",
