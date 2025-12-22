@@ -87,10 +87,13 @@ class TestFilterParsing:
         assert len(model_filter.conditions) == 1
         assert model_filter.conditions[0].operator == FilterOperator.IN
 
-    def test_invalid_format_ignored(self):
-        """Test invalid filter format is ignored."""
-        model_filter = ModelFilter("invalid_filter")
-        assert len(model_filter.conditions) == 0
+    def test_simple_string_converts_to_name_like(self):
+        """Test simple string without colons converts to name:like filter."""
+        model_filter = ModelFilter("llama")
+        assert len(model_filter.conditions) == 1
+        assert model_filter.conditions[0].field == "name"
+        assert model_filter.conditions[0].operator == FilterOperator.LIKE
+        assert model_filter.conditions[0].value == "llama"
 
     def test_invalid_operator_ignored(self):
         """Test invalid operator is ignored."""

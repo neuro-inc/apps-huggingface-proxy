@@ -105,10 +105,10 @@ async def test_get_output_detail(client: TestClient, mock_hf_repo_response):
     assert data["status"] == "success"
     assert "data" in data
     assert data["data"]["id"] == "meta-llama/Llama-3.1-8B-Instruct"
-    assert data["data"]["value"]["gated"] is True
-    assert data["data"]["value"]["cached"] is False
-    assert "tags" in data["data"]["value"]
-    assert len(data["data"]["value"]["tags"]) > 0
+    assert data["data"]["gated"] is True
+    assert data["data"]["cached"] is False
+    assert "tags" in data["data"]
+    assert len(data["data"]["tags"]) > 0
 
     src.dependencies._hf_service = None
 
@@ -123,7 +123,7 @@ async def test_get_output_detail_cached_always_false(client: TestClient, mock_hf
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    assert data["data"]["value"]["cached"] is False
+    assert data["data"]["cached"] is False
 
     src.dependencies._hf_service = None
 
@@ -169,7 +169,7 @@ async def test_cached_model_detection(client: TestClient, mock_hf_repo_response)
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    assert data["data"]["value"]["cached"] is True
+    assert data["data"]["cached"] is True
 
     src.dependencies._hf_service = None
 
@@ -259,9 +259,9 @@ async def test_get_output_detail_missing_optional_fields(client: TestClient):
     data = response.json()
     assert data["status"] == "success"
     assert data["data"]["id"] == "minimal-model"
-    assert data["data"]["value"]["visibility"] == "public"
-    assert data["data"]["value"]["gated"] is False
-    assert data["data"]["value"]["cached"] is False
+    assert data["data"]["visibility"] == "public"
+    assert data["data"]["gated"] is False
+    assert data["data"]["cached"] is False
 
     src.dependencies._hf_service = None
 
@@ -316,18 +316,32 @@ async def test_list_outputs_filter_no_matches(client: TestClient, mock_hf_search
 
 async def test_cached_models_in_list(client: TestClient, mock_hf_search_response):
     """Test that cached status is correctly set for models in list."""
-    cached_models = {"meta-llama/Llama-3.1-8B-Instruct"}
+    # Use cached_models_list to mock get_cached_models return value
+    cached_models_list = [
+        {
+            "id": "meta-llama/Llama-3.1-8B-Instruct",
+            "modelId": "meta-llama/Llama-3.1-8B-Instruct",
+            "private": False,
+            "gated": True,
+            "tags": ["text-generation", "llama"],
+            "lastModified": None,
+        },
+    ]
     mock_service = create_mock_service(
-        search_response=mock_hf_search_response, cached_models=cached_models
+        search_response=mock_hf_search_response,
+        cached_models_list=cached_models_list,
     )
     patch_hf_service(mock_service)
 
-    response = client.get("/outputs")
+    # Use a filter to trigger the "filters applied" branch that combines cache + API
+    response = client.get("/outputs?filter=name:like:a")
 
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
+    # First model should be cached (from cached_models_list)
     assert data["data"][0]["value"]["cached"] is True
+    # Second model should not be cached (from API)
     assert data["data"][1]["value"]["cached"] is False
 
     src.dependencies._hf_service = None

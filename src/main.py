@@ -12,6 +12,7 @@ from apolo_app_types import (
     DynamicAppBasicResponse,
     DynamicAppFilterParams,
 )
+from apolo_app_types.protocols.common.storage import ApoloFilesPath
 from fastapi import Depends, FastAPI
 
 from src.config import Config
@@ -60,6 +61,7 @@ app.config = Config(
     hf_timeout=int(os.getenv("HF_TIMEOUT", "30")),
     hf_token=os.getenv("HF_TOKEN"),
     hf_cache_dir=os.getenv("HF_CACHE_DIR", "/root/.cache/huggingface"),
+    hf_storage_uri=os.getenv("HF_STORAGE_URI", "storage:.apps/hugging-face-cache"),
     log_level=os.getenv("LOG_LEVEL", "INFO"),
     log_json=os.getenv("LOG_JSON", "true").lower() == "true",
     port=int(os.getenv("PORT", "8080")),
@@ -70,18 +72,18 @@ setup_logging(app.config)
 logger = logging.getLogger(__name__)
 
 
-def get_model_cache_path(repo_id: str, cache_dir: str) -> str:
-    """Build the cache path for a model.
+def get_model_cache_path(repo_id: str, storage_uri: str) -> ApoloFilesPath:
+    """Build the storage path for a cached model.
 
     Args:
         repo_id: The model repository ID (e.g., "org/model-name")
-        cache_dir: The HuggingFace cache directory
+        storage_uri: The base storage URI (e.g., "storage:.apps/hugging-face-cache")
 
     Returns:
-        The full path to the model's cache directory
+        ApoloFilesPath with the full storage path to the model's cache
     """
     model_cache_name = f"models--{repo_id.replace('/', '--')}"
-    return f"{cache_dir}/hub/{model_cache_name}"
+    return ApoloFilesPath(path=f"{storage_uri}/hub/{model_cache_name}")
 
 
 @app.get("/")
@@ -127,7 +129,7 @@ async def list_outputs(
         api_filters = model_filter.get_api_filters()
         local_conditions = model_filter.get_local_conditions()
 
-        cache_dir = app.config.hf_cache_dir
+        storage_uri = app.config.hf_storage_uri
         hf_response: list[dict[str, Any]] = []
         cached_model_ids: set[str] = set()
 
@@ -198,7 +200,7 @@ async def list_outputs(
                 model_name = repo_id.split("/")[-1] if "/" in repo_id else repo_id
                 is_cached = model.get("cached", False)
                 # Build files_path for cached models
-                files_path = get_model_cache_path(repo_id, cache_dir) if is_cached else None
+                files_path = get_model_cache_path(repo_id, storage_uri) if is_cached else None
                 hf_model = HFModel(
                     id=repo_id,
                     value=HFModelDetail(
@@ -249,20 +251,17 @@ async def get_output_detail(
         is_cached = hf_response.get("cached", False)
         # Build files_path for cached models
         files_path = (
-            get_model_cache_path(model_repo_id, app.config.hf_cache_dir) if is_cached else None
+            get_model_cache_path(model_repo_id, app.config.hf_storage_uri) if is_cached else None
         )
-        model = HFModel(
+        model = HFModelDetail(
             id=model_repo_id,
-            value=HFModelDetail(
-                id=model_repo_id,
-                name=model_name,
-                visibility="private" if hf_response.get("private") else "public",
-                gated=hf_response.get("gated", False),
-                tags=hf_response.get("tags", []),
-                cached=is_cached,
-                last_modified=hf_response.get("lastModified"),
-                files_path=files_path,
-            ),
+            name=model_name,
+            visibility="private" if hf_response.get("private") else "public",
+            gated=hf_response.get("gated", False),
+            tags=hf_response.get("tags", []),
+            cached=is_cached,
+            last_modified=hf_response.get("lastModified"),
+            files_path=files_path,
         )
 
         return ModelResponse(status="success", data=model)
