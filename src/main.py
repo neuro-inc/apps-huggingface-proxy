@@ -7,6 +7,7 @@ import signal
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
+from urllib.parse import unquote
 
 from apolo_app_types import (
     DynamicAppBasicResponse,
@@ -240,6 +241,8 @@ async def get_output_detail(
 ) -> ModelResponse:
     """Get details for a specific repository."""
     try:
+        # Decode URL-encoded characters (e.g., %2F -> /)
+        repo_id = unquote(repo_id)
         logger.info("Fetching output details", extra={"repo_id": repo_id})
 
         async with hf_service:
