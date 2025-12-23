@@ -1,6 +1,7 @@
 """Pydantic models for API request/response schemas."""
 
 from apolo_app_types.dynamic_outputs import DynamicAppIdResponse, DynamicAppListResponse
+from apolo_app_types.protocols.common.hugging_face import HuggingFaceToken
 from apolo_app_types.protocols.common.storage import ApoloFilesPath
 from pydantic import BaseModel, Field
 
@@ -16,6 +17,7 @@ class HFModelDetail(BaseModel):
     cached: bool = Field(False, description="Whether model is cached locally")
     last_modified: str | None = Field(None, description="Last modification timestamp")
     files_path: ApoloFilesPath | None = Field(None, description="Path to cached model files")
+    hf_token: HuggingFaceToken | None = Field(None, description="HuggingFace token")
 
 
 class HFModel(DynamicAppIdResponse):

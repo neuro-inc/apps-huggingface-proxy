@@ -142,6 +142,8 @@ class HfProxyChartValueProcessor(BaseChartValueProcessor[HfProxyInputs]):
             "HF_TIMEOUT": "30",
             "HF_CACHE_DIR": "/root/.cache/huggingface",
             "HF_STORAGE_URI": inputs.files_path.path,
+            "HF_TOKEN_NAME": inputs.token.token_name,
+            "HF_TOKEN_KEY": inputs.token.token.key,
             "PORT": "8080",
             "HF_TOKEN": serialize_optional_secret(inputs.token.token, secret_name=app_secrets_name),
         }

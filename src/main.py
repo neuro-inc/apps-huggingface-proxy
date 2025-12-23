@@ -13,6 +13,8 @@ from apolo_app_types import (
     DynamicAppBasicResponse,
     DynamicAppFilterParams,
 )
+from apolo_app_types.protocols.common.hugging_face import HuggingFaceToken
+from apolo_app_types.protocols.common.secrets_ import ApoloSecret
 from apolo_app_types.protocols.common.storage import ApoloFilesPath
 from fastapi import Depends, FastAPI
 
@@ -63,6 +65,8 @@ app.config = Config(
     hf_token=os.getenv("HF_TOKEN"),
     hf_cache_dir=os.getenv("HF_CACHE_DIR", "/root/.cache/huggingface"),
     hf_storage_uri=os.getenv("HF_STORAGE_URI", "storage:.apps/hugging-face-cache"),
+    hf_token_name=os.getenv("HF_TOKEN_NAME", "hf-token"),
+    hf_token_key=os.getenv("HF_TOKEN_KEY", "HF_TOKEN"),
     log_level=os.getenv("LOG_LEVEL", "INFO"),
     log_json=os.getenv("LOG_JSON", "true").lower() == "true",
     port=int(os.getenv("PORT", "8080")),
@@ -71,6 +75,21 @@ app.config = Config(
 
 setup_logging(app.config)
 logger = logging.getLogger(__name__)
+
+
+def get_hf_token(config: Config) -> HuggingFaceToken:
+    """Build the HuggingFaceToken object from config.
+
+    Args:
+        config: The application configuration
+
+    Returns:
+        HuggingFaceToken with token_name and token secret
+    """
+    return HuggingFaceToken(
+        token_name=config.hf_token_name,
+        token=ApoloSecret(key=config.hf_token_key),
+    )
 
 
 def get_model_cache_path(repo_id: str, storage_uri: str) -> ApoloFilesPath:
@@ -213,6 +232,7 @@ async def list_outputs(
                         cached=is_cached,
                         last_modified=model.get("lastModified"),
                         files_path=files_path,
+                        hf_token=get_hf_token(app.config),
                     ),
                 )
                 models.append(hf_model)
@@ -265,6 +285,7 @@ async def get_output_detail(
             cached=is_cached,
             last_modified=hf_response.get("lastModified"),
             files_path=files_path,
+            hf_token=get_hf_token(app.config),
         )
 
         return ModelResponse(status="success", data=model)
