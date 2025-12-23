@@ -132,6 +132,22 @@
             }
           ],
           "default": null
+        },
+        "hf_token": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HuggingFaceToken"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "x-description": "Provide a Hugging Face API token linked to an account with access to the model specified above. This token will be used to download model files from the Hugging Face Hub, including gated or private repositories where applicable.",
+          "x-is-advanced-field": false,
+          "x-is-configurable": true,
+          "x-meta-type": "integration",
+          "x-title": "Hugging Face Token"
         }
       },
       "required": [
