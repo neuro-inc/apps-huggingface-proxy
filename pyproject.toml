@@ -8,7 +8,7 @@ packages = [{include = "apolo_apps_hf_proxy", from = ".apolo/src"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
-fastapi = "^0.115.0"
+fastapi = "^0.128.0"
 uvicorn = {extras = ["standard"], version = "^0.32.0"}
 pydantic = "^2.9.0"
 pydantic-settings = "^2.6.0"
