@@ -31,7 +31,7 @@
     - **Storage Integration**: Seamless integration with Apolo platform storage
     - **Token Management**: Secure HuggingFace API token handling via Apolo Secrets
   pub_date: "2025-11-17T00:00:00+00:00"
-  logo: https://storage.googleapis.com/development-421920-assets/app-logos/huggingface.svg
+  logo: https://storage.googleapis.com/development-421920-assets/app-logos/hugging-face.svg
   changelog:
     file: ./CHANGELOG.md
   tags:
@@ -44,7 +44,7 @@
     - "MLOps"
   assets:
     - type: image
-      url: https://storage.googleapis.com/development-421920-assets/app-logos/huggingface-banner.png
+      url: https://storage.googleapis.com/development-421920-assets/app-logos/hugging-face-banner.svg
   urls:
     - name: HuggingFace Proxy installation guide
       type: documentation
