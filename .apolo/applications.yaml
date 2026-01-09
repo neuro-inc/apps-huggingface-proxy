@@ -1,6 +1,6 @@
 - app_type: huggingface
   name: hf-proxy
-  title: HuggingFace
+  title: HuggingFace App
   install_type: workflow
   helm_path: charts/hf-proxy
   app_package_name: apolo_apps_hf_proxy
