@@ -14,7 +14,7 @@ pydantic = "^2.9.0"
 pydantic-settings = "^2.13.1"
 httpx = "^0.28.0"
 python-json-logger = "^4.1.0"
-apolo-app-types = "26.3.3"
+apolo-app-types = "26.4.0"
 aiofiles = "^25.1.0"
 huggingface-hub = "^1.8.0"
 
