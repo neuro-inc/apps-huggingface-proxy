@@ -20,7 +20,7 @@ huggingface-hub = "^1.10.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"
-pytest-asyncio = "^0.24.0"
+pytest-asyncio = ">=0.24,<1.4"
 pytest-cov = "^7.1.0"
 httpx = "^0.28.0"
 ruff = "^0.15.10"
