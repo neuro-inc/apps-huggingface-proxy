@@ -1,32 +1,29 @@
 """Input processor for HuggingFace Proxy App."""
 
-import json
 import logging
-from typing import Any
+import typing as t
 
-import apolo_sdk
-from apolo_app_types.helm.apps.common import get_component_values
+from apolo_app_types.helm.apps.base import BaseChartValueProcessor
+from apolo_app_types.helm.apps.common import (
+    append_apolo_storage_integration_annotations,
+    gen_apolo_storage_integration_labels,
+    get_component_values,
+)
+from apolo_app_types.protocols.common import (
+    ApoloFilesMount,
+    ApoloMountMode,
+    MountPath,
+)
+from apolo_app_types.protocols.common.secrets_ import serialize_optional_secret
+from apolo_app_types.protocols.common.storage import ApoloMountModes
 
 from .types import HfProxyInputs
 
 logger = logging.getLogger(__name__)
 
 
-class HfProxyChartValueProcessor:
+class HfProxyChartValueProcessor(BaseChartValueProcessor[HfProxyInputs]):
     """Processes HuggingFace Proxy inputs into Helm chart values."""
-
-    def __init__(
-        self,
-        inputs: HfProxyInputs,
-        app_instance_id: str,
-        cluster_domain: str,
-        client: apolo_sdk.Client,
-    ):
-        """Initialize the processor."""
-        self.inputs = inputs
-        self.app_instance_id = app_instance_id
-        self.cluster_domain = cluster_domain
-        self.client = client
 
     async def _get_preset(self) -> str:
         """Auto-select the best CPU preset for hf-proxy deployment.
@@ -101,9 +98,18 @@ class HfProxyChartValueProcessor:
         logger.info(f"Selected preset: {preset_name}")
         return preset_name
 
-    async def gen_extra_values(self) -> dict[str, Any]:
+    async def gen_extra_values(
+        self,
+        input_: HfProxyInputs,
+        app_name: str,
+        namespace: str,
+        app_id: str,
+        app_secrets_name: str,
+        *_: t.Any,
+        **kwargs: t.Any,
+    ) -> dict[str, t.Any]:
         """Generate Helm chart values from user inputs."""
-        inputs = self.inputs
+        inputs = input_
 
         # Auto-select the best CPU preset
         preset_name = await self._get_preset()
@@ -112,39 +118,38 @@ class HfProxyChartValueProcessor:
         # Get component values (resources, labels, tolerations, affinity)
         component_vals = await get_component_values(preset, preset_name)
 
-        # Get storage URI from cache config
-        storage_uri = inputs.cache_config.files_path.path
+        # Storage injection configuration using proper helper functions
+        storage_mount = ApoloFilesMount(
+            storage_uri=inputs.files_path,
+            mount_path=MountPath(path="/root/.cache/huggingface"),
+            mode=ApoloMountMode(mode=ApoloMountModes.RW),
+        )
 
-        # Storage injection configuration
-        storage_config = [
-            {
-                "storage_uri": storage_uri,
-                "mount_path": "/root/.cache/huggingface",
-                "mount_mode": "rw",  # Read-write for caching
-            }
-        ]
+        # Pod annotations for storage injection (using helper to get proper format)
+        pod_annotations = append_apolo_storage_integration_annotations(
+            {}, [storage_mount], self.client
+        )
 
-        # Pod annotations for storage injection
-        pod_annotations = {
-            "platform.apolo.us/inject-storage": json.dumps(storage_config),
-        }
-
-        # Pod labels for storage injection (merge with component labels)
+        # Pod labels for storage injection (merge with component labels + org/project)
         pod_labels = {
             **component_vals["labels"],  # Component and preset labels
-            "platform.apolo.us/inject-storage": "true",
+            **gen_apolo_storage_integration_labels(client=self.client, inject_storage=True),
             "application": "hf-proxy",
         }
 
-        # Environment variables
+        # Environment variables with HF token from app secrets
         env_vars = {
             "HF_TIMEOUT": "30",
             "HF_CACHE_DIR": "/root/.cache/huggingface",
+            "HF_STORAGE_URI": inputs.files_path.path,
+            "HF_TOKEN_NAME": inputs.token.token_name,
+            "HF_TOKEN_KEY": inputs.token.token.key,
             "PORT": "8080",
+            "HF_TOKEN": serialize_optional_secret(inputs.token.token, secret_name=app_secrets_name),
         }
 
         # Build Helm values
-        values: dict[str, Any] = {
+        values: dict[str, t.Any] = {
             # Image configuration
             "image": {
                 "repository": "ghcr.io/neuro-inc/apps-huggingface-proxy",
@@ -173,13 +178,7 @@ class HfProxyChartValueProcessor:
             "volumes": [],
             "volumeMounts": [],
             # Apolo app ID for platform integration
-            "apolo_app_id": self.app_instance_id,
-        }
-
-        # Create secret for HF token using the token key from ApoloSecret
-        values["hf_token_secret"] = {
-            "name": inputs.token.token_name,
-            "key": inputs.token.token.key,
+            "apolo_app_id": app_id,
         }
 
         return values

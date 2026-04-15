@@ -4,34 +4,31 @@ import json
 from unittest.mock import AsyncMock
 
 import pytest
-from apolo_app_types.protocols.common.hugging_face import HuggingFaceCache, HuggingFaceToken
+from apolo_app_types.protocols.common.hugging_face import HuggingFaceToken
 from apolo_app_types.protocols.common.secrets_ import ApoloSecret
 from apolo_app_types.protocols.common.storage import ApoloFilesPath
 from apolo_apps_hf_proxy.inputs_processor import HfProxyChartValueProcessor
 from apolo_apps_hf_proxy.types import HfProxyInputs
 
 
-async def test_hf_proxy_basic_values_generation(
-    setup_clients, app_instance_id, cluster_domain, mock_apolo_client
-):
+async def test_hf_proxy_basic_values_generation(setup_clients, app_instance_id, mock_apolo_client):
     """Test basic Helm values generation from user inputs."""
     # Arrange
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(
-            files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache")
-        ),
+        files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
-    processor = HfProxyChartValueProcessor(
-        inputs=inputs,
-        app_instance_id=app_instance_id,
-        cluster_domain=cluster_domain,
-        client=mock_apolo_client,
-    )
+    processor = HfProxyChartValueProcessor(client=mock_apolo_client)
 
     # Act
-    values = await processor.gen_extra_values()
+    values = await processor.gen_extra_values(
+        input_=inputs,
+        app_name="test-app",
+        namespace="test-namespace",
+        app_id=app_instance_id,
+        app_secrets_name="test-secrets",
+    )
 
     # Assert - Image configuration
     assert values["image"]["repository"] == "ghcr.io/neuro-inc/apps-huggingface-proxy"
@@ -66,14 +63,17 @@ async def test_hf_proxy_basic_values_generation(
     assert values["service"]["type"] == "ClusterIP"
     assert values["service"]["port"] == 8080
 
-    # Assert - HF token secret
-    assert values["hf_token_secret"]["name"] == "hf-token"
-    assert values["hf_token_secret"]["key"] == "HF_TOKEN"
-
     # Assert - Environment variables
     assert values["env"]["HF_TIMEOUT"] == "30"
     assert values["env"]["HF_CACHE_DIR"] == "/root/.cache/huggingface"
     assert values["env"]["PORT"] == "8080"
+
+    # Assert - HF token is serialized as secretKeyRef
+    assert "HF_TOKEN" in values["env"]
+    hf_token_env = values["env"]["HF_TOKEN"]
+    assert "valueFrom" in hf_token_env
+    assert "secretKeyRef" in hf_token_env["valueFrom"]
+    assert hf_token_env["valueFrom"]["secretKeyRef"]["key"] == "HF_TOKEN"
 
     # Assert - Apolo app ID
     assert values["apolo_app_id"] == app_instance_id
@@ -81,26 +81,25 @@ async def test_hf_proxy_basic_values_generation(
 
 @pytest.mark.asyncio
 async def test_hf_proxy_storage_injection_annotations(
-    setup_clients, app_instance_id, cluster_domain, mock_apolo_client
+    setup_clients, app_instance_id, mock_apolo_client
 ):
     """Test that storage injection annotations are correctly set."""
     # Arrange
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(
-            files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache")
-        ),
+        files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
-    processor = HfProxyChartValueProcessor(
-        inputs=inputs,
-        app_instance_id=app_instance_id,
-        cluster_domain=cluster_domain,
-        client=mock_apolo_client,
-    )
+    processor = HfProxyChartValueProcessor(client=mock_apolo_client)
 
     # Act
-    values = await processor.gen_extra_values()
+    values = await processor.gen_extra_values(
+        input_=inputs,
+        app_name="test-app",
+        namespace="test-namespace",
+        app_id=app_instance_id,
+        app_secrets_name="test-secrets",
+    )
 
     # Assert - Pod labels include storage injection flag
     assert "platform.apolo.us/inject-storage" in values["podLabels"]
@@ -119,32 +118,33 @@ async def test_hf_proxy_storage_injection_annotations(
 
     # Assert storage mount configuration
     mount = storage_config[0]
-    assert mount["storage_uri"] == "storage:.apps/hugging-face-cache"
+    # Helper function expands relative paths to full storage URIs
+    assert mount["storage_uri"].endswith(".apps/hugging-face-cache")
+    assert mount["storage_uri"].startswith("storage://")
     assert mount["mount_path"] == "/root/.cache/huggingface"
     assert mount["mount_mode"] == "rw"
 
 
 @pytest.mark.asyncio
-async def test_hf_proxy_custom_storage_uri(
-    setup_clients, app_instance_id, cluster_domain, mock_apolo_client
-):
+async def test_hf_proxy_custom_storage_uri(setup_clients, app_instance_id, mock_apolo_client):
     """Test custom storage URI configuration."""
     # Arrange
     custom_storage_uri = "storage://default/org/project/custom-hf-cache"
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(files_path=ApoloFilesPath(path=custom_storage_uri)),
+        files_path=ApoloFilesPath(path=custom_storage_uri),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
-    processor = HfProxyChartValueProcessor(
-        inputs=inputs,
-        app_instance_id=app_instance_id,
-        cluster_domain=cluster_domain,
-        client=mock_apolo_client,
-    )
+    processor = HfProxyChartValueProcessor(client=mock_apolo_client)
 
     # Act
-    values = await processor.gen_extra_values()
+    values = await processor.gen_extra_values(
+        input_=inputs,
+        app_name="test-app",
+        namespace="test-namespace",
+        app_id=app_instance_id,
+        app_secrets_name="test-secrets",
+    )
 
     # Assert - Custom storage URI is used
     storage_config_str = values["podAnnotations"]["platform.apolo.us/inject-storage"]
@@ -155,26 +155,25 @@ async def test_hf_proxy_custom_storage_uri(
 
 @pytest.mark.asyncio
 async def test_hf_proxy_preset_selection_cheapest(
-    setup_clients, app_instance_id, cluster_domain, mock_apolo_client
+    setup_clients, app_instance_id, mock_apolo_client
 ):
     """Test that preset auto-selection chooses the cheapest viable preset."""
     # Arrange
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(
-            files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache")
-        ),
+        files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
-    processor = HfProxyChartValueProcessor(
-        inputs=inputs,
-        app_instance_id=app_instance_id,
-        cluster_domain=cluster_domain,
-        client=mock_apolo_client,
-    )
+    processor = HfProxyChartValueProcessor(client=mock_apolo_client)
 
     # Act
-    values = await processor.gen_extra_values()
+    values = await processor.gen_extra_values(
+        input_=inputs,
+        app_name="test-app",
+        namespace="test-namespace",
+        app_id=app_instance_id,
+        app_secrets_name="test-secrets",
+    )
 
     # Assert - Should select cpu-small (cheapest at 1.0 credits/hour)
     assert values["preset_name"] == "cpu-small"
@@ -183,9 +182,7 @@ async def test_hf_proxy_preset_selection_cheapest(
 
 
 @pytest.mark.asyncio
-async def test_hf_proxy_preset_filters_gpu(
-    setup_clients, app_instance_id, cluster_domain, mock_apolo_client
-):
+async def test_hf_proxy_preset_filters_gpu(setup_clients, app_instance_id, mock_apolo_client):
     """Test that GPU presets are filtered out."""
     # Arrange - Remove all CPU presets except GPU
     mock_apolo_client.config.presets = {
@@ -193,27 +190,26 @@ async def test_hf_proxy_preset_filters_gpu(
     }
 
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(
-            files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache")
-        ),
+        files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
-    processor = HfProxyChartValueProcessor(
-        inputs=inputs,
-        app_instance_id=app_instance_id,
-        cluster_domain=cluster_domain,
-        client=mock_apolo_client,
-    )
+    processor = HfProxyChartValueProcessor(client=mock_apolo_client)
 
     # Act & Assert - Should raise error (no CPU presets available)
     with pytest.raises(RuntimeError, match="No suitable CPU preset found"):
-        await processor.gen_extra_values()
+        await processor.gen_extra_values(
+            input_=inputs,
+            app_name="test-app",
+            namespace="test-namespace",
+            app_id=app_instance_id,
+            app_secrets_name="test-secrets",
+        )
 
 
 @pytest.mark.asyncio
 async def test_hf_proxy_preset_filters_no_capacity(
-    setup_clients, app_instance_id, cluster_domain, mock_apolo_client
+    setup_clients, app_instance_id, mock_apolo_client
 ):
     """Test that presets without capacity are filtered out."""
 
@@ -224,27 +220,26 @@ async def test_hf_proxy_preset_filters_no_capacity(
     mock_apolo_client.jobs.get_capacity = AsyncMock(side_effect=mock_get_capacity_zero)
 
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(
-            files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache")
-        ),
+        files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
-    processor = HfProxyChartValueProcessor(
-        inputs=inputs,
-        app_instance_id=app_instance_id,
-        cluster_domain=cluster_domain,
-        client=mock_apolo_client,
-    )
+    processor = HfProxyChartValueProcessor(client=mock_apolo_client)
 
     # Act & Assert - Should raise error (no capacity)
     with pytest.raises(RuntimeError, match="No suitable CPU preset found"):
-        await processor.gen_extra_values()
+        await processor.gen_extra_values(
+            input_=inputs,
+            app_name="test-app",
+            namespace="test-namespace",
+            app_id=app_instance_id,
+            app_secrets_name="test-secrets",
+        )
 
 
 @pytest.mark.asyncio
 async def test_hf_proxy_preset_filters_insufficient_resources(
-    setup_clients, app_instance_id, cluster_domain, mock_apolo_client
+    setup_clients, app_instance_id, mock_apolo_client
 ):
     """Test that presets below minimum requirements are filtered out."""
     # Arrange - Only keep cpu-tiny which is below minimum
@@ -253,27 +248,26 @@ async def test_hf_proxy_preset_filters_insufficient_resources(
     }
 
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(
-            files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache")
-        ),
+        files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
-    processor = HfProxyChartValueProcessor(
-        inputs=inputs,
-        app_instance_id=app_instance_id,
-        cluster_domain=cluster_domain,
-        client=mock_apolo_client,
-    )
+    processor = HfProxyChartValueProcessor(client=mock_apolo_client)
 
     # Act & Assert - Should raise error (insufficient resources)
     with pytest.raises(RuntimeError, match="No suitable CPU preset found"):
-        await processor.gen_extra_values()
+        await processor.gen_extra_values(
+            input_=inputs,
+            app_name="test-app",
+            namespace="test-namespace",
+            app_id=app_instance_id,
+            app_secrets_name="test-secrets",
+        )
 
 
 @pytest.mark.asyncio
 async def test_hf_proxy_preset_prefers_higher_capacity_when_equal_cost(
-    setup_clients, app_instance_id, cluster_domain, mock_apolo_client
+    setup_clients, app_instance_id, mock_apolo_client
 ):
     """Test that when costs are equal, preset with more capacity is selected."""
     # Arrange - Make cpu-medium same cost as cpu-small
@@ -289,21 +283,20 @@ async def test_hf_proxy_preset_prefers_higher_capacity_when_equal_cost(
     # With same cost, should still prefer cpu-small (more capacity: 5 > 3)
 
     inputs = HfProxyInputs(
-        cache_config=HuggingFaceCache(
-            files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache")
-        ),
+        files_path=ApoloFilesPath(path="storage:.apps/hugging-face-cache"),
         token=HuggingFaceToken(token_name="hf-token", token=ApoloSecret(key="HF_TOKEN")),
     )
 
-    processor = HfProxyChartValueProcessor(
-        inputs=inputs,
-        app_instance_id=app_instance_id,
-        cluster_domain=cluster_domain,
-        client=mock_apolo_client,
-    )
+    processor = HfProxyChartValueProcessor(client=mock_apolo_client)
 
     # Act
-    values = await processor.gen_extra_values()
+    values = await processor.gen_extra_values(
+        input_=inputs,
+        app_name="test-app",
+        namespace="test-namespace",
+        app_id=app_instance_id,
+        app_secrets_name="test-secrets",
+    )
 
     # Assert - Should still select cpu-small (higher capacity: 5 > 3)
     assert values["preset_name"] == "cpu-small"

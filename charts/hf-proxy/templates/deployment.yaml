@@ -56,22 +56,23 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- with .Values.volumeMounts }}
           volumeMounts:
-            - name: huggingface-cache
-              mountPath: /root/.cache/huggingface
-            {{- with .Values.volumeMounts }}
-            {{- toYaml . | nindent 12 }}
-            {{- end }}
-          {{- with .Values.container.env }}
-          env:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          env:
+          {{- range $k, $v := .Values.env }}
+          - name: {{ $k }}
+            {{- if kindIs "string" $v }}
+            value: {{ $v | quote }}
+            {{- else }}
+            {{- $v | toYaml | nindent 12 }}
+            {{- end }}
+          {{- end }}
+      {{- with .Values.volumes }}
       volumes:
-        - name: huggingface-cache
-          emptyDir: {}
-        {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
-        {{- end }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

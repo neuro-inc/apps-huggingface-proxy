@@ -1,6 +1,6 @@
-- app_type: hf-proxy
+- app_type: huggingface
   name: hf-proxy
-  title: HuggingFace
+  title: HuggingFace App
   install_type: workflow
   helm_path: charts/hf-proxy
   app_package_name: apolo_apps_hf_proxy
@@ -8,12 +8,12 @@
     schema_path: .apolo/src/apolo_apps_hf_proxy/schemas/HfProxyInputs.json
     types_name: HfProxyInputs
     processor: HfProxyChartValueProcessor
-    image: ghcr.io/neuro-inc/apps-huggingface-proxy
+    image: ghcr.io/neuro-inc/apps-huggingface-proxy-hooks
   outputs:
     schema_path: .apolo/src/apolo_apps_hf_proxy/schemas/HfProxyOutputs.json
     types_name: HfProxyOutputs
     processor: HfProxyOutputProcessor
-    image: ghcr.io/neuro-inc/apps-huggingface-proxy
+    image: ghcr.io/neuro-inc/apps-huggingface-proxy-hooks
   short_description: Production-ready proxy for HuggingFace API with caching
   description: |
     A scalable, production-ready proxy service for the HuggingFace API that provides
@@ -31,7 +31,7 @@
     - **Storage Integration**: Seamless integration with Apolo platform storage
     - **Token Management**: Secure HuggingFace API token handling via Apolo Secrets
   pub_date: "2025-11-17T00:00:00+00:00"
-  logo: https://storage.googleapis.com/development-421920-assets/app-logos/huggingface.svg
+  logo: https://storage.googleapis.com/development-421920-assets/app-logos/hugging-face.svg
   changelog:
     file: ./CHANGELOG.md
   tags:
@@ -44,7 +44,7 @@
     - "MLOps"
   assets:
     - type: image
-      url: https://storage.googleapis.com/development-421920-assets/app-logos/huggingface-banner.png
+      url: https://storage.googleapis.com/development-421920-assets/app-logos/hugging-face-banner.svg
   urls:
     - name: HuggingFace Proxy installation guide
       type: documentation

@@ -31,7 +31,7 @@ def mock_hf_search_response():
             "modelId": "meta-llama/Llama-3.1-8B-Instruct",
             "cardData": {"license": "llama3.1", "tags": ["text-generation"]},
             "private": False,
-            "gated": True,
+            "gated": "manual",  # HF API returns string for gated models
             "tags": ["text-generation", "llama"],
         },
         {
@@ -52,7 +52,7 @@ def mock_hf_repo_response():
         "id": "meta-llama/Llama-3.1-8B-Instruct",
         "modelId": "meta-llama/Llama-3.1-8B-Instruct",
         "private": False,
-        "gated": True,
+        "gated": "manual",  # HF API returns string for gated models
         "tags": ["text-generation", "llama", "pytorch"],
         "lastModified": "2024-07-23T14:48:00.000Z",
         "cached": False,

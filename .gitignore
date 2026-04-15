@@ -42,6 +42,3 @@ htmlcov/
 # Environment
 .env
 .env.local
-
-# Poetry
-poetry.lock

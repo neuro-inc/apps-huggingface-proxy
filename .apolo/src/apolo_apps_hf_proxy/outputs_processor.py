@@ -3,7 +3,7 @@
 import typing as t
 
 from apolo_app_types.outputs.base import BaseAppOutputsProcessor
-from apolo_app_types.protocols.common.hugging_face import HuggingFaceCache, HuggingFaceToken
+from apolo_app_types.protocols.common.hugging_face import HuggingFaceToken
 from apolo_app_types.protocols.common.secrets_ import ApoloSecret
 from apolo_app_types.protocols.common.storage import ApoloFilesPath
 
@@ -27,7 +27,7 @@ class HfProxyOutputProcessor(BaseAppOutputsProcessor[HfProxyOutputs]):
         Returns:
             HfProxyOutputs with configuration
         """
-        # Reconstruct cache_config from helm_values
+        # Reconstruct files_path from helm_values
         # The storage URI is in the pod annotations as JSON
         storage_uri = "storage:.apps/hugging-face-cache"  # Default
         if "podAnnotations" in helm_values:
@@ -41,7 +41,7 @@ class HfProxyOutputProcessor(BaseAppOutputsProcessor[HfProxyOutputs]):
                 if storage_config and len(storage_config) > 0:
                     storage_uri = storage_config[0].get("storage_uri", storage_uri)
 
-        cache_config = HuggingFaceCache(files_path=ApoloFilesPath(path=storage_uri))
+        files_path = ApoloFilesPath(path=storage_uri)
 
         # Reconstruct token from helm_values
         token_secret = helm_values.get("hf_token_secret", {})
@@ -54,6 +54,6 @@ class HfProxyOutputProcessor(BaseAppOutputsProcessor[HfProxyOutputs]):
         )
 
         return HfProxyOutputs(
-            cache_config=cache_config,
+            files_path=files_path,
             token=token,
         )

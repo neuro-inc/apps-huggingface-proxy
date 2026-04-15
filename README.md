@@ -178,8 +178,8 @@ make build
 # Tag and push to registry
 export REGISTRY=ghcr.io/your-org
 export IMAGE_TAG=v1.0.0
-make build
-make push
+make build-hook-image
+make push-hook-image
 ```
 
 ## CI/CD
