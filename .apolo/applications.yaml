@@ -30,6 +30,9 @@
     - **Automatic Preset Selection**: Optimal CPU resource allocation based on cluster capacity
     - **Storage Integration**: Seamless integration with Apolo platform storage
     - **Token Management**: Secure HuggingFace API token handling via Apolo Secrets
+    Resource sizing options:
+    - Lean (dev/test): 0.1 vCPU, 0.5 GiB RAM
+    - Balanced (prod): 0.5 vCPU, 1 GiB RAM
   pub_date: "2025-11-17T00:00:00+00:00"
   logo: https://storage.googleapis.com/development-421920-assets/app-logos/hugging-face.svg
   changelog:
