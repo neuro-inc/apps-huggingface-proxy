@@ -331,9 +331,6 @@
     "files_path": {
       "$ref": "#/$defs/ApoloFilesPath"
     },
-    "token": {
-      "$ref": "#/$defs/HuggingFaceToken"
-    },
     "huggingface_models": {
       "items": {
         "$ref": "#/$defs/HuggingFaceModelDetailDynamic"
@@ -348,8 +345,7 @@
     }
   },
   "required": [
-    "files_path",
-    "token"
+    "files_path"
   ],
   "title": "HfProxyOutputs",
   "type": "object"
