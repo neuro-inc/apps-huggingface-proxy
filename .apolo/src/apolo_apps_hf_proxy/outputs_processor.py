@@ -3,8 +3,6 @@
 import typing as t
 
 from apolo_app_types.outputs.base import BaseAppOutputsProcessor
-from apolo_app_types.protocols.common.hugging_face import HuggingFaceToken
-from apolo_app_types.protocols.common.secrets_ import ApoloSecret
 from apolo_app_types.protocols.common.storage import ApoloFilesPath
 
 from .types import HfProxyOutputs
@@ -43,17 +41,6 @@ class HfProxyOutputProcessor(BaseAppOutputsProcessor[HfProxyOutputs]):
 
         files_path = ApoloFilesPath(path=storage_uri)
 
-        # Reconstruct token from helm_values
-        token_secret = helm_values.get("hf_token_secret", {})
-        token_name = token_secret.get("name", "hf-token")
-        token_key = token_secret.get("key", "HF_TOKEN")
-
-        token = HuggingFaceToken(
-            token_name=token_name,
-            token=ApoloSecret(key=token_key),
-        )
-
         return HfProxyOutputs(
             files_path=files_path,
-            token=token,
         )

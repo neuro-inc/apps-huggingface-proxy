@@ -29,8 +29,6 @@ class HfProxyOutputs(AppOutputs):
 
     files_path: ApoloFilesPath
 
-    token: HuggingFaceToken
-
     huggingface_models: list[HuggingFaceModelDetailDynamic] = Field(
         default_factory=list,
         json_schema_extra=SchemaExtraMetadata(
